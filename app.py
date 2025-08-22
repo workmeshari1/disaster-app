@@ -1,21 +1,21 @@
 import streamlit as st
+import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
-import pandas as pd
-from sentence_transformers import SentenceTransformer, util
-import torch
+from sentence_transformers import SentenceTransformer
+import json
 
-# ---------- إعدادات الاتصال ----------
-SHEET_ID = "11BWnvPjcRZwnGhynCCyYCc7MGfHJlSyJCqwHI6z4KJI"
-JSON_PATH = "credentials.json"
+# إعداد الصفحة
+st.set_page_config(page_title="نظام إدارة الأزمات", layout="wide")
 
-# ---------- تحميل البيانات من Google Sheet ----------
+# تحميل البيانات والموديل
 @st.cache_data(ttl=600)
 def load_data():
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = Credentials.from_service_account_file(JSON_PATH, scopes=scopes)
+    creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     client = gspread.authorize(creds)
-    sheet = client.open_by_key(SHEET_ID)
+    sheet = client.open_by_key(st.secrets["SHEET_ID"])
     data_sheet = sheet.sheet1
 
     data = data_sheet.get_all_records()
@@ -29,139 +29,30 @@ def load_data():
 
     return df, model, embeddings, password_cell
 
-# ---------- تحميل البيانات ----------
+# واجهة التطبيق
+st.title("🛠️ نظام إدارة الأزمات")
+
+# إدخال كلمة المرور
+user_password = st.text_input("أدخل كلمة المرور للوصول إلى البيانات:", type="password")
+
+# تحميل البيانات
 df, model, embeddings, PASSWORD = load_data()
 
-# ---------- إعداد واجهة Streamlit ----------
-st.set_page_config(page_title="⚡ إدارة الكوارث والأزمات", layout="centered")
+# التحقق من كلمة المرور
+if user_password == PASSWORD:
+    st.success("تم التحقق من كلمة المرور ✅")
+    st.subheader("📋 البيانات الحالية")
+    st.dataframe(df, use_container_width=True)
 
-st.markdown("""
-    <style>
-    body {
-        background-color: #0a1e3f;
-        color: white;
-        direction: rtl;
-    }
-    h2 {
-        color: #ff6600 !important;
-        text-align: center;
-    }
-    .action-box {
-        background-color: #ff6600;
-        color: #0a1e3f;
-        padding: 10px;
-        border-radius: 6px;
-        font-size: 18px;
-        margin-bottom: 12px;
-        direction: rtl;
-        text-align: right;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# ---------- المصادقة ----------
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-
-if not st.session_state.authenticated:
-    st.markdown("<h2>ادخل الرقم السري</h2>", unsafe_allow_html=True)
-    password = st.text_input("الرقم السري", type="password")
-    if st.button("دخول"):
-        if password == PASSWORD:
-            st.session_state.authenticated = True
-            st.rerun()
-        else:
-            st.error("❌ الرقم السري غير صحيح")
-else:
-    st.markdown("<h2>⚡ دائرة إدارة الكوارث والأزمات الصناعية</h2>", unsafe_allow_html=True)
-
-    query = st.text_input("ابحث هنا:")
+    # إدخال وصف الحالة
+    query = st.text_area("أدخل وصف الحالة أو الحدث:", max_chars=300)
 
     if query:
-        query_lower = query.lower()
-        words = query_lower.split()
-        literal_results = []
-        synonym_results = []
-
-        # ---------- البحث الحرفي ----------
-        for idx, row in df.iterrows():
-            text = str(row['وصف الحالة أو الحدث']).lower()
-            if all(word in text for word in words):
-                literal_results.append(row)
-
-        # ---------- البحث بالمرادفات ----------
-        for idx, row in df.iterrows():
-            text = str(row['وصف الحالة أو الحدث']).lower()
-            synonyms = str(row.get('مرادفات للوصف', '')).lower().split(',')
-            synonyms = [s.strip() for s in synonyms if s.strip()]
-            if idx not in [r.name for r in literal_results]:
-                if any(word in text or any(word in s for s in synonyms) for word in words):
-                    synonym_results.append(row)
-
-        # ---------- عرض نتائج البحث الحرفي ----------
-        if literal_results:
-            for r in literal_results[:2]:
-                st.markdown(
-                    f"""
-                    <div style='background-color:#1f1f1f;color:white;padding:10px;border-radius:5px;direction:rtl;text-align:right;font-size:18px;display:flex;align-items:center;gap:10px;'>
-                    <span style="font-size:24px;">🔍</span>
-                    <div>
-                        <b>الوصف:</b> {r['وصف الحالة أو الحدث']}<br>
-                        <b>الإجراء:</b>
-                        <span style='background-color:#ff6600;color:#0a1e3f;padding:4px 8px;border-radius:5px;display:inline-block;'>
-                        {r['الإجراء']}
-                        </span>
-                    </div>
-                    </div><br>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-        # ---------- عرض نتائج المرادفات ----------
-        if synonym_results:
-            st.markdown("👀 يمكن تقصد:")
-            for r in synonym_results:
-                st.markdown(
-                    f"""
-                    <div style='background-color:#333;color:white;padding:10px;border-radius:5px;direction:rtl;text-align:right;font-size:18px;'>
-                    <b>الوصف:</b> {r['وصف الحالة أو الحدث']}<br>
-                    <b>الإجراء:</b>
-                    <span style='background-color:#ff6600;color:#0a1e3f;padding:4px 8px;border-radius:5px;display:inline-block;'>
-                    {r['الإجراء']}
-                    </span>
-                    </div><br>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-        # ---------- البحث الذكي ----------
-        if st.button("🔍 جرب البحث الذكي"):
-            query_embedding = model.encode(query, convert_to_tensor=True)
-            cosine_scores = util.pytorch_cos_sim(query_embedding, embeddings)[0]
-            top_results = torch.topk(cosine_scores, k=2)
-
-            st.markdown("<b>🔎 نتائج البحث الذكي:</b>", unsafe_allow_html=True)
-            for score, idx in zip(top_results[0], top_results[1]):
-                r = df.iloc[idx.item()]
-                st.markdown(
-                    f"""
-                    <div style='background-color:#444;color:white;padding:10px;border-radius:5px;direction:rtl;text-align:right;font-size:18px;display:flex;align-items:center;gap:10px;'>
-                    <span style="font-size:24px;">🤖</span>
-                    <div>
-                        <b>الوصف:</b> {r['وصف الحالة أو الحدث']}<br>
-                        <b>الإجراء:</b>
-                        <span style='background-color:#ff6600;color:#0a1e3f;padding:4px 8px;border-radius:5px;display:inline-block;'>
-                        {r['الإجراء']}
-                        </span><br>
-                        <span style='font-size:14px;color:orange;'>درجة التشابه: {score:.2f}</span>
-                    </div>
-                    </div><br>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-        st.info("إذا ماوصلك الإجراء الصحيح، جرب وصف أدق أو استخدم البحث الذكي")
-
-    if st.button("🔒 تسجيل خروج"):
-        st.session_state.authenticated = False
-        st.rerun()
+        query_embedding = model.encode([query], convert_to_tensor=True)
+        from torch.nn.functional import cosine_similarity
+        scores = cosine_similarity(query_embedding, embeddings)[0]
+        top_idx = scores.argmax().item()
+        st.markdown("### 🎯 أقرب حالة مشابهة:")
+        st.write(df.iloc[top_idx])
+else:
+    st.warning("كلمة المرور غير صحيحة أو لم تُدخل بعد.")
