@@ -7,7 +7,9 @@ import torch
 
 # ---------- الإعدادات ----------
 SHEET_ID = "11BWnvPjcRZwnGhynCCyYCc7MGfHJlSyJCqwHI6z4KJI"
-JSON_PATH = r"C:\Users\Meshari\smart-google-sheet\perfect-entry-469221-e3-2fb34a3b26e3.json"
+import json
+creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
 
 # ---------- الاتصال بـ Google Sheet ----------
 @st.cache_data(ttl=600)
@@ -173,3 +175,4 @@ else:
     if st.button("🔒 تسجيل خروج"):
         st.session_state.authenticated = False
         st.rerun()
+
