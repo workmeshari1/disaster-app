@@ -1,0 +1,6 @@
+streamlit
+gspread
+pandas
+google-auth
+sentence-transformers
+torch
