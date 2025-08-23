@@ -14,7 +14,11 @@ JSON_PATH = r"C:\Users\Meshari\smart-google-sheet\perfect-entry-469221-e3-2fb34a
 def load_data():
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-        creds = Credentials.from_service_account_file(JSON_PATH, scopes=scopes)
+        import json
+import os
+
+service_account_info = json.loads(os.getenv("GCP_SERVICE_ACCOUNT"))
+creds = Credentials.from_service_account_info(service_account_info, scopes=scopes)
         client = gspread.authorize(creds)
         sheet = client.open_by_key(SHEET_ID)
         data_sheet = sheet.sheet1
@@ -136,3 +140,4 @@ else:
     if st.button("🔒 تسجيل خروج"):
         st.session_state.authenticated = False
         st.rerun()
+
