@@ -12,7 +12,8 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 # --- تحميل الموديل مرة واحدة ---
 @st.cache_resource
 def load_model():
-    return SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
+    return SentenceTransformer("sentence-transformers/LaBSE")
+
 
 # --- قراءة البيانات + كلمة المرور من الشيت (كل 10 دق) ---
 @st.cache_data(ttl=600)
@@ -160,4 +161,5 @@ else:
 if st.button("🔒 تسجيل خروج"):
     st.session_state.authenticated = False
     st.rerun()
+
 
