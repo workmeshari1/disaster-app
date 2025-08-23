@@ -4,21 +4,22 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 from sentence_transformers import SentenceTransformer, util
 import torch
+import json
+import os
 
 # ---------- الإعدادات ----------
 SHEET_ID = "11BWnvPjcRZwnGhynCCyYCc7MGfHJlSyJCqwHI6z4KJI"
-JSON_PATH = r"C:\Users\Meshari\smart-google-sheet\perfect-entry-469221-e3-2fb34a3b26e3.json"
 
 # ---------- الاتصال بـ Google Sheet ----------
 @st.cache_data(ttl=600)
 def load_data():
     try:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-        import json
-import os
 
-service_account_info = json.loads(os.getenv("GCP_SERVICE_ACCOUNT"))
-creds = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+        # نقرأ JSON من GitHub Secret
+        service_account_info = json.loads(os.getenv("GCP_SERVICE_ACCOUNT"))
+        creds = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+
         client = gspread.authorize(creds)
         sheet = client.open_by_key(SHEET_ID)
         data_sheet = sheet.sheet1
@@ -140,4 +141,3 @@ else:
     if st.button("🔒 تسجيل خروج"):
         st.session_state.authenticated = False
         st.rerun()
-
