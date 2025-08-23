@@ -1,6 +1,6 @@
-streamlit
-gspread
-pandas
-google-auth
-sentence-transformers
-torch
+streamlit>=1.36
+pandas>=2.2
+gspread>=6.0.2
+google-auth>=2.30
+sentence-transformers>=3.0.1
+torch>=2.3.0
