@@ -77,9 +77,9 @@ if not st.session_state.authenticated:
     st.stop()
 
 # بعد التحقق
-query = st.text_input("ابحث هنا:", placeholder="اكتب وصف الحالة…")
+query = st.text_input("ابحث هنا:", placeholder=" اكتب وصف الحالة أو الحدث…")
 if not query:
-    st.info("اكتب كلمات البحث أولًا. لن نعرض كل الشيت افتراضيًا.")
+    st.info(".")
     st.stop()
 
 # ---------- البحث الحرفي ----------
@@ -160,3 +160,4 @@ else:
 if st.button("🔒 تسجيل خروج"):
     st.session_state.authenticated = False
     st.rerun()
+
