@@ -1,4 +1,3 @@
-كود disater-app  ناجح ( المرحلة الأولى ) 
 
 import streamlit as st
 import gspread
@@ -163,6 +162,3 @@ else:
 if st.button("🔒 تسجيل خروج"):
     st.session_state.authenticated = False
     st.rerun()
-
-
-
