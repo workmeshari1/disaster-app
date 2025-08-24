@@ -1,3 +1,5 @@
+كود disater-app  ناجح ( المرحلة الأولى ) 
+
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
@@ -109,7 +111,7 @@ def render_card(r, icon="🔶"):
     st.markdown(
         f"""
         <div style='background:#1f1f1f;color:#fff;padding:12px;border-radius:8px;direction:rtl;text-align:right;font-size:18px;margin-bottom:10px;'>
-            <div style="font-size:22px;margin-bottom:6px;">{icon} نتيجة</div>
+            <div style="font-size:22px;margin-bottom:6px;">{icon} </div>
             <b>الوصف:</b> {r[DESC_COL]}<br>
             <b>الإجراء:</b>
             <span style='background:#ff6600;color:#0a1e3f;padding:4px 8px;border-radius:6px;display:inline-block;margin-top:4px;'>
@@ -140,13 +142,13 @@ else:
         cosine_scores = util.pytorch_cos_sim(query_embedding, embeddings)[0]
         top_scores, top_indices = torch.topk(cosine_scores, k=min(3, len(df)))
 
-        st.subheader("🔎 نتائج بحث الذكي:")
+        st.subheader("🔎:")
         for score, idx in zip(top_scores, top_indices):
             r = df.iloc[int(idx.item())]
             st.markdown(
                 f"""
                 <div style='background:#444;color:#fff;padding:12px;border-radius:8px;direction:rtl;text-align:right;font-size:18px;margin-bottom:10px;'>
-                    <div style="font-size:22px;margin-bottom:6px;">🤖 نتيجة ذكية</div>
+                    <div style="font-size:22px;margin-bottom:6px;">🤖 </div>
                     <b>الوصف:</b> {r[DESC_COL]}<br>
                     <b>الإجراء:</b>
                     <span style='background:#ff6600;color:#0a1e3f;padding:4px 8px;border-radius:6px;display:inline-block;margin-top:4px;'>
@@ -161,3 +163,6 @@ else:
 if st.button("🔒 تسجيل خروج"):
     st.session_state.authenticated = False
     st.rerun()
+
+
+
