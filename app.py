@@ -47,7 +47,7 @@ st.title("⚡ دائرة إدارة الكوارث والأزمات الصناع
 try:
     df, PASSWORD = load_data_and_password()
 except Exception as e:
-    st.error("❌ فشل الاتصال بجوجل شيت. تأكد من إعداد الأسرار ومشاركة الشيت مع خدمة الخدمة (service account).")
+    st.error("❌ فشل الاتصال. (service account).")
     st.stop()
 
 # التحقق من الأعمدة المطلوبة
@@ -121,17 +121,17 @@ def render_card(r, icon="🔶"):
     )
 
 if literal_results:
-    st.subheader("🔍 نتائج البحث الحرفي (من الوصف):")
+    st.subheader("🔍:")
     for r in literal_results[:3]:
         render_card(r, "🔍")
 elif synonym_results:
-    st.subheader("📌 نتائج من المرادفات:")
+    st.subheader("📌 يمكن قصدك:")
     for r in synonym_results[:3]:
         render_card(r, "📌")
 else:
-    st.warning("❌ لم يتم العثور على نتائج حرفية .. تقدر تستخدم البحث الذكي 👇")
+    st.warning("❌ لم يتم العثور على نتائج.. وش رايك تسأل الذكي 👇")
 
-    if st.button("🤖 جرب البحث الذكي"):
+    if st.button("🤖 الذكي"):
         model = load_model()
         descriptions = df[DESC_COL].fillna("").astype(str).tolist()
         embeddings = compute_embeddings(descriptions)
@@ -140,7 +140,7 @@ else:
         cosine_scores = util.pytorch_cos_sim(query_embedding, embeddings)[0]
         top_scores, top_indices = torch.topk(cosine_scores, k=min(3, len(df)))
 
-        st.subheader("🔎 نتائج البحث الذكي:")
+        st.subheader("🔎 نتائج بحث الذكي:")
         for score, idx in zip(top_scores, top_indices):
             r = df.iloc[int(idx.item())]
             st.markdown(
@@ -161,5 +161,3 @@ else:
 if st.button("🔒 تسجيل خروج"):
     st.session_state.authenticated = False
     st.rerun()
-
-
