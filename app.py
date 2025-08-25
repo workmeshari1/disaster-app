@@ -9,16 +9,15 @@ st.set_page_config(page_title="⚡ إدارة الكوارث والأزمات", 
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-‎# --- تحميل الموديل مرة واحدة ---
+# --- تحميل الموديل مرة واحدة ---
 @st.cache_resource
 def load_model():
     return SentenceTransformer("sentence-transformers/LaBSE")
 
 
-‎# --- قراءة البيانات + كلمة المرور من الشيت (كل 10 دق) ---
+# --- قراءة البيانات + كلمة المرور من الشيت (كل 10 دق) ---
 @st.cache_data(ttl=600)
 def load_data_and_password():
-‎    # نقرأ الدكت مباشرة من st.secrets (بدون json.loads)
     creds_info = dict(st.secrets["GOOGLE_CREDENTIALS"])
     creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
     client = gspread.authorize(creds)
@@ -29,40 +28,42 @@ def load_data_and_password():
     data = ws.get_all_records()
     df = pd.DataFrame(data)
 
-‎    # كلمة المرور من E1 (صف 1 عمود 5)
+    # كلمة المرور من E1 (صف 1 عمود 5)
     password_value = ws.cell(1, 5).value
 
     return df, password_value
 
-‎# --- حساب إمبادنج للوصف (يتحدّث فقط عند تغيّر البيانات) ---
+
+# --- حساب إمبادنج للوصف (يتحدّث فقط عند تغيّر البيانات) ---
 @st.cache_data
 def compute_embeddings(descriptions: list[str]):
     model = load_model()
     return model.encode(descriptions, convert_to_tensor=True)
 
-‎# ============== واجهة ==============
+
+# ============== واجهة ==============
 st.title("⚡ دائرة إدارة الكوارث والأزمات الصناعية")
 
-‎# جرّب تحميل البيانات
+# جرّب تحميل البيانات
 try:
     df, PASSWORD = load_data_and_password()
-except Exception as e:
+except Exception:
     st.error("❌ فشل الاتصال. (service account).")
     st.stop()
 
-‎# التحقق من الأعمدة المطلوبة
+# التحقق من الأعمدة المطلوبة
 DESC_COL = "وصف الحالة أو الحدث"
 ACTION_COL = "الإجراء"
 SYN_COL = "مرادفات للوصف"
+
 for col in [DESC_COL, ACTION_COL]:
     if col not in df.columns:
         st.error(f"عمود مفقود في Google Sheet: '{col}'. تأكد من اسم العمود حرفيًا.")
         st.stop()
 if SYN_COL not in df.columns:
-‎    # لو ناقص، نضيفه عمود فاضي لتجنّب الأخطاء
-    df[SYN_COL] = ""
+    df[SYN_COL] = ""  # نضيفه فارغ إذا ناقص
 
-‎# تسجيل الدخول
+# تسجيل الدخول
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -77,34 +78,33 @@ if not st.session_state.authenticated:
             st.error("❌ الرقم السري غير صحيح")
     st.stop()
 
-‎# بعد التحقق
+# بعد التحقق
 query = st.text_input("ابحث هنا:", placeholder="اكتب وصف الحالة…")
 if not query:
     st.info("⚡ 🔥 🚔 🚗 🛢️ 💧")
     st.stop()
 
-‎# ---------- البحث الحرفي ----------
+# ---------- البحث الحرفي ----------
 q = query.strip().lower()
 words = [w for w in q.split() if w]
 
 literal_results = []
 synonym_results = []
 
-‎# 1) الحرفي من الوصف
+# 1) الحرفي من الوصف
 for _, row in df.iterrows():
     text = str(row[DESC_COL]).lower()
     if all(w in text for w in words):
         literal_results.append(row)
 
-‎# 2) الحرفي من المرادفات (نبحث داخل النص كاملًا وليس مساواة تامة)
+# 2) الحرفي من المرادفات
 if not literal_results:
     for _, row in df.iterrows():
         syn_text = str(row.get(SYN_COL, "")).lower()
-‎        # نعتبر أي كلمة من كلمات البحث موجودة ضمن المرادفات
         if any(w in syn_text for w in words):
             synonym_results.append(row)
 
-‎# عرض أقرب 3 نتائج من كل نوع
+# عرض أقرب 3 نتائج من كل نوع
 def render_card(r, icon="🔶"):
     st.markdown(
         f"""
