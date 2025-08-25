@@ -131,7 +131,7 @@ elif synonym_results:
 else:
     st.warning("❌ لم يتم العثور على نتائج.. وش رايك تسأل الذكي 👇")
 
-    if st.button("🤖 الذكي"):
+    if st.button("🤖  اسأل الذكي"):
         model = load_model()
         descriptions = df[DESC_COL].fillna("").astype(str).tolist()
         embeddings = compute_embeddings(descriptions)
@@ -161,3 +161,4 @@ else:
 if st.button("🔒 تسجيل خروج"):
     st.session_state.authenticated = False
     st.rerun()
+
