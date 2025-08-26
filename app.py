@@ -13,8 +13,7 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 # --- تحميل الموديل مرة واحدة ---
 @st.cache_resource
 def load_model():
-    return SentenceTransformer("sentence-transformers/arabic-mpnet-v2")
-
+    return SentenceTransformer("Omartificial-Intelligence-Space/Arabert-all-nli-triplet-Matryoshka")
 
 # --- قراءة البيانات + كلمة المرور من الشيت (كل 10 دق) ---
 @st.cache_data(ttl=600)
@@ -219,4 +218,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
