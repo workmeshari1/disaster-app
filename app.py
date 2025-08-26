@@ -4,6 +4,7 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 from sentence_transformers import SentenceTransformer, util
 import torch
+import os
 
 st.set_page_config(page_title="⚡ إدارة الكوارث والأزمات", layout="centered", initial_sidebar_state="collapsed")
 
@@ -18,20 +19,37 @@ def load_model():
 # --- قراءة البيانات + كلمة المرور من الشيت (كل 10 دق) ---
 @st.cache_data(ttl=600)
 def load_data_and_password():
-    creds_info = dict(st.secrets["GOOGLE_CREDENTIALS"])
-    creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
-    client = gspread.authorize(creds)
+    # Get credentials from environment or secrets
+    try:
+        if hasattr(st, 'secrets') and "GOOGLE_CREDENTIALS" in st.secrets:
+            creds_info = dict(st.secrets["GOOGLE_CREDENTIALS"])
+        else:
+            # Fallback to environment variable
+            import json
+            creds_json = os.getenv("GOOGLE_CREDENTIALS", "{}")
+            creds_info = json.loads(creds_json)
+        
+        creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
+        client = gspread.authorize(creds)
 
-    sheet = client.open_by_key(st.secrets["SHEET"]["id"])
-    ws = sheet.sheet1
+        # Get sheet ID from secrets or environment
+        if hasattr(st, 'secrets') and "SHEET" in st.secrets:
+            sheet_id = st.secrets["SHEET"]["id"]
+        else:
+            sheet_id = os.getenv("SHEET_ID", "")
+        
+        sheet = client.open_by_key(sheet_id)
+        ws = sheet.sheet1
 
-    data = ws.get_all_records()
-    df = pd.DataFrame(data)
+        data = ws.get_all_records()
+        df = pd.DataFrame(data)
 
-    # كلمة المرور من E1 (صف 1 عمود 5)
-    password_value = ws.cell(1, 5).value
+        # كلمة المرور من E1 (صف 1 عمود 5)
+        password_value = ws.cell(1, 5).value
 
-    return df, password_value
+        return df, password_value
+    except Exception as e:
+        raise Exception(f"Failed to connect to Google Sheets: {str(e)}")
 
 
 # --- حساب إمبادنج للوصف (يتحدّث فقط عند تغيّر البيانات) ---
@@ -47,8 +65,9 @@ st.title("⚡ دائرة إدارة الكوارث والأزمات الصناع
 # جرّب تحميل البيانات
 try:
     df, PASSWORD = load_data_and_password()
-except Exception:
-    st.error("❌ فشل الاتصال. (service account).")
+except Exception as e:
+    st.error(f"❌ فشل الاتصال بقاعدة البيانات: {str(e)}")
+    st.info("تأكد من إعداد متغيرات البيئة أو أسرار Streamlit بشكل صحيح.")
     st.stop()
 
 # التحقق من الأعمدة المطلوبة
@@ -56,10 +75,17 @@ DESC_COL = "وصف الحالة أو الحدث"
 ACTION_COL = "الإجراء"
 SYN_COL = "مرادفات للوصف"
 
+# Check if dataframe is empty
+if df.empty:
+    st.error("❌ لا توجد بيانات في الجدول. تأكد من وجود بيانات في Google Sheet.")
+    st.stop()
+
 for col in [DESC_COL, ACTION_COL]:
     if col not in df.columns:
         st.error(f"عمود مفقود في Google Sheet: '{col}'. تأكد من اسم العمود حرفيًا.")
+        st.info(f"الأعمدة المتاحة: {list(df.columns)}")
         st.stop()
+
 if SYN_COL not in df.columns:
     df[SYN_COL] = ""  # نضيفه فارغ إذا ناقص
 
@@ -71,7 +97,7 @@ if not st.session_state.authenticated:
     st.subheader("ادخل الرقم السري")
     password = st.text_input("الرقم السري", type="password")
     if st.button("دخول"):
-        if password == PASSWORD:
+        if password == str(PASSWORD):
             st.session_state.authenticated = True
             st.rerun()
         else:
@@ -121,7 +147,7 @@ def render_card(r, icon="🔶"):
     )
 
 if literal_results:
-    st.subheader("🔍:")
+    st.subheader("🔍 النتائج المطابقة:")
     for r in literal_results[:3]:
         render_card(r, "🔍")
 elif synonym_results:
@@ -131,34 +157,66 @@ elif synonym_results:
 else:
     st.warning("❌ لم يتم العثور على نتائج.. وش رايك تسأل الذكي 👇")
 
-    if st.button("🤖  اسأل الذكي"):
-        model = load_model()
-        descriptions = df[DESC_COL].fillna("").astype(str).tolist()
-        embeddings = compute_embeddings(descriptions)
+    if st.button("🤖 اسأل الذكي"):
+        try:
+            with st.spinner("جاري البحث الذكي..."):
+                model = load_model()
+                descriptions = df[DESC_COL].fillna("").astype(str).tolist()
+                
+                if not descriptions or all(not desc.strip() for desc in descriptions):
+                    st.error("❌ لا توجد أوصاف صالحة في البيانات.")
+                    st.stop()
+                
+                embeddings = compute_embeddings(descriptions)
+                query_embedding = model.encode(query, convert_to_tensor=True)
+                cosine_scores = util.pytorch_cos_sim(query_embedding, embeddings)[0]
+                top_scores, top_indices = torch.topk(cosine_scores, k=min(3, len(df)))
 
-        query_embedding = model.encode(query, convert_to_tensor=True)
-        cosine_scores = util.pytorch_cos_sim(query_embedding, embeddings)[0]
-        top_scores, top_indices = torch.topk(cosine_scores, k=min(3, len(df)))
+                st.subheader("🧐 يمكن قصدك:")
+                found_results = False
+                for score, idx in zip(top_scores, top_indices):
+                    # Only show results with reasonable similarity (above 0.3)
+                    if float(score) > 0.3:
+                        found_results = True
+                        r = df.iloc[int(idx.item())]
+                        st.markdown(
+                            f"""
+                            <div style='background:#444;color:#fff;padding:12px;border-radius:8px;direction:rtl;text-align:right;font-size:18px;margin-bottom:10px;'>
+                                <div style="font-size:22px;margin-bottom:6px;">🤖 </div>
+                                <b>الوصف:</b> {r[DESC_COL]}<br>
+                                <b>الإجراء:</b>
+                                <span style='background:#ff6600;color:#0a1e3f;padding:4px 8px;border-radius:6px;display:inline-block;margin-top:4px;'>
+                                    {r[ACTION_COL]}
+                                </span><br>
+                                <span style='font-size:14px;color:orange;'>درجة التشابه: {float(score):.2f}</span>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                
+                if not found_results:
+                    st.info("🤖 لم يتم العثور على نتائج مشابهة كافية. حاول إعادة صياغة سؤالك.")
+                    
+        except Exception as e:
+            st.error(f"❌ خطأ في البحث الذكي: {str(e)}")
 
-        st.subheader("🔎:")
-        for score, idx in zip(top_scores, top_indices):
-            r = df.iloc[int(idx.item())]
-            st.markdown(
-                f"""
-                <div style='background:#444;color:#fff;padding:12px;border-radius:8px;direction:rtl;text-align:right;font-size:18px;margin-bottom:10px;'>
-                    <div style="font-size:22px;margin-bottom:6px;">🤖 </div>
-                    <b>الوصف:</b> {r[DESC_COL]}<br>
-                    <b>الإجراء:</b>
-                    <span style='background:#ff6600;color:#0a1e3f;padding:4px 8px;border-radius:6px;display:inline-block;margin-top:4px;'>
-                        {r[ACTION_COL]}
-                    </span><br>
-                    <span style='font-size:14px;color:orange;'>درجة التشابه: {float(score):.2f}</span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+# شريط جانبي للمعلومات الإضافية
+with st.sidebar:
+    st.markdown("### معلومات النظام")
+    st.info(f"📊 عدد الحالات المسجلة: {len(df)}")
+    st.info("🔄 تحديث البيانات: كل 10 دقائق")
+    
+    if st.button("🔒 تسجيل خروج"):
+        st.session_state.authenticated = False
+        st.rerun()
 
-if st.button("🔒 تسجيل خروج"):
-    st.session_state.authenticated = False
-    st.rerun()
-
+# Footer
+st.markdown("---")
+st.markdown(
+    """
+    <div style='text-align: center; color: #888; direction: rtl;'>
+    نظام إدارة الكوارث والأزمات الذكي | تم التطوير باستخدام الذكاء الاصطناعي
+    </div>
+    """,
+    unsafe_allow_html=True
+)
