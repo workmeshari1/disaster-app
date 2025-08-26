@@ -13,7 +13,7 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 # --- تحميل الموديل مرة واحدة ---
 @st.cache_resource
 def load_model():
-    return SentenceTransformer("sentence-transformers/LaBSE")
+    return SentenceTransformer("sentence-transformers/arabic-mpnet-v2")
 
 
 # --- قراءة البيانات + كلمة المرور من الشيت (كل 10 دق) ---
@@ -156,7 +156,6 @@ elif synonym_results:
         render_card(r, "📌")
 else:
     st.warning("❌ لم يتم العثور على نتائج.. وش رايك تسأل الذكي 👇")
-
     if st.button("🤖 اسأل الذكي"):
         try:
             with st.spinner("جاري البحث الذكي..."):
@@ -220,3 +219,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
