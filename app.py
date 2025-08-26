@@ -213,10 +213,11 @@ st.markdown("---")
 st.markdown(
     """
     <div style='text-align: center; color: #888; direction: rtl;'>
-    نظام إدارة الكوارث والأزمات الذكي | تم التطوير باستخدام الذكاء الاصطناعي
+    آلية إدارة الكوارث والأزمات الذكية
     </div>
     """,
     unsafe_allow_html=True
 )
+
 
 
