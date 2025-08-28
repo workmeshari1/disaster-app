@@ -116,14 +116,10 @@ for col in [DESC_COL, ACTION_COL]:
 if SYN_COL not in df.columns:
     df[SYN_COL] = ""  # نضيفه فارغ إذا ناقص
 
-# تسجيل الدخول
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-
 # نص الإدخال للرقم السري
 password = st.text_input("الرقم السري", type="password", key="pass_input")
 
-# تحقق من Enter أو زر دخول
+# دالة للتحقق من الرقم السري
 def check_password():
     if st.session_state.pass_input == str(PASSWORD):
         st.session_state.authenticated = True
@@ -132,18 +128,13 @@ def check_password():
     elif st.session_state.pass_input != "":
         st.error("❌ الرقم السري غير صحيح")
 
-# عندما يضغط Enter (على نفس الـ text_input)
+# تحقق عند الضغط على Enter (في text_input)
 if st.session_state.pass_input != "":
     check_password()
+
 # زر دخول اختياري
 if st.button("دخول"):
     check_password()
-        if password == str(PASSWORD):
-            st.session_state.authenticated = True
-            st.rerun()
-        else:
-            st.error("❌ الرقم السري غير صحيح")
-    st.stop()
 # بعد التحقق
 query = st.text_input("ابحث هنا:", placeholder="اكتب وصف الحالة…")
 if not query:
@@ -259,6 +250,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
