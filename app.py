@@ -1,6 +1,20 @@
 import streamlit as st
 import streamlit as st
 
+page_bg_img = f"""
+<style>
+.stApp {{
+    background-image: url("https://github.com/workmeshari1/disaster-app/blob/main/assets.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}}
+</style>
+"""
+
+st.markdown(page_bg_img, unsafe_allow_html=True)
+import streamlit as st
+
 # إخفاء شعار ستريملت والمنيو والفوتر
 hide_st_style = """
     <style>
@@ -230,6 +244,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
