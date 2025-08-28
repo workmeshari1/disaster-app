@@ -108,30 +108,21 @@ if SYN_COL not in df.columns:
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
-if "pass_input" not in st.session_state:
-    st.session_state.pass_input = ""
-
-# --- شاشة تسجيل الدخول ---
+# --- شاشة تسجيل الدخول باستخدام form ---
 if not st.session_state.authenticated:
     st.subheader("ادخل الرقم السري")
-    st.text_input("الرقم السري", type="password", key="pass_input")
-
-    def check_password():
-        if st.session_state.pass_input == str(PASSWORD):
-            st.session_state.authenticated = True
-            st.session_state.pass_input = ""
-            st.experimental_rerun()
-        elif st.session_state.pass_input != "":
-            st.error("❌ الرقم السري غير صحيح")
-
-    # تحقق عند الضغط على Enter
-    if st.session_state.pass_input != "":
-        check_password()
-
-    # زر دخول اختياري
-    if st.button("دخول"):
-        check_password()
-
+    
+    with st.form("login_form", clear_on_submit=False):
+        password_input = st.text_input("الرقم السري", type="password")
+        submitted = st.form_submit_button("دخول")
+        
+        if submitted:
+            if password_input == str(PASSWORD):
+                st.session_state.authenticated = True
+                st.experimental_rerun()
+            else:
+                st.error("❌ الرقم السري غير صحيح")
+    
     st.stop()  # يمنع ظهور البحث قبل المصادقة
 
 # --- واجهة البحث بعد المصادقة ---
