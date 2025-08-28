@@ -37,9 +37,20 @@ footer {visibility: hidden;}
 header {visibility: hidden;}
 .stDeployButton {display:none;}
 button[kind="header"] {display:none;}
+[data-testid="stDecoration"] {display: none !important;} /* يخفي أي أيقونات إضافية أسفل البحث */
 </style>
 """
 st.markdown(hide_st_style, unsafe_allow_html=True)
+
+# --- تصغير عنوان الصفحة ---
+st.markdown("""
+<style>
+h1 { 
+    font-size: 28px !important;  /* حجم العنوان الرئيسي */
+    color: #ffffff;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # --- إعدادات Google Sheets ---
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -108,21 +119,21 @@ if SYN_COL not in df.columns:
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
-# --- شاشة تسجيل الدخول باستخدام form ---
+# --- شاشة تسجيل الدخول باستخدام form (Enter يعمل) ---
 if not st.session_state.authenticated:
     st.subheader("ادخل الرقم السري")
-    
-    with st.form("login_form", clear_on_submit=False):
+
+    with st.form("login_form"):
         password_input = st.text_input("الرقم السري", type="password")
         submitted = st.form_submit_button("دخول")
-        
+
         if submitted:
             if password_input == str(PASSWORD):
                 st.session_state.authenticated = True
-                st.experimental_rerun()
+                st.experimental_rerun()  # إعادة تحميل التطبيق بعد المصادقة
             else:
                 st.error("❌ الرقم السري غير صحيح")
-    
+
     st.stop()  # يمنع ظهور البحث قبل المصادقة
 
 # --- واجهة البحث بعد المصادقة ---
@@ -174,7 +185,7 @@ elif synonym_results:
 else:
     st.warning("❌ لم يتم العثور على نتائج")
 
-# Sidebar ومعلومات إضافية
+# --- شريط جانبي ---
 with st.sidebar:
     st.markdown("### معلومات النظام")
     st.info(f"📊 عدد الحالات المسجلة: {len(df)}")
@@ -182,7 +193,7 @@ with st.sidebar:
     
     if st.button("🔒 تسجيل خروج"):
         st.session_state.authenticated = False
-        st.experimental_rerun()
+        st.rerun()
 
 # Footer
 st.markdown("---")
