@@ -42,12 +42,13 @@ button[kind="header"] {display:none;}
 """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
-# --- تصغير عنوان الصفحة ---
+# --- تصغير عنوان الصفحة ورفعه للأعلى ---
 st.markdown("""
 <style>
 h1 { 
     font-size: 26px !important;
     color: #ffffff;
+    margin-top: -40px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -119,22 +120,19 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    # Form يسمح بالضغط على Enter أو زر دخول
-    with st.form("login_form"):
-        password_input = st.text_input("", type="password", placeholder="الرقم السري")
-        submitted = st.form_submit_button("دخول")
-        if submitted:
-            if password_input == str(PASSWORD):
-                st.session_state.authenticated = True
-                st.experimental_rerun()
-            else:
-                st.error("❌ الرقم السري غير صحيح")
-    st.stop()  # يمنع ظهور البحث قبل المصادقة
+    st.markdown("<div style='text-align:right;font-size:24px;'>🔒</div>", unsafe_allow_html=True)
+    password_input = st.text_input(" ", type="password", placeholder="الرقم السري")
+    if password_input == str(PASSWORD):
+        st.session_state.authenticated = True
+        st.experimental_rerun()
+    elif password_input:
+        st.error("❌ الرقم السري غير صحيح")
+    st.stop()
 
 # --- واجهة البحث بعد المصادقة ---
+st.markdown("<div style='text-align:right;font-size:24px;'>🔍</div>", unsafe_allow_html=True)
 query = st.text_input("ابحث هنا:", placeholder="اكتب وصف الحالة…")
 if not query:
-    st.info("⚡ 🔥 🚔 🚗 🛢️ 💧")
     st.stop()
 
 q = query.strip().lower()
@@ -148,6 +146,7 @@ for _, row in df.iterrows():
     if all(w in text for w in words):
         literal_results.append(row)
 
+# البحث بالمرادفات
 if not literal_results:
     for _, row in df.iterrows():
         syn_text = str(row.get(SYN_COL, "")).lower()
