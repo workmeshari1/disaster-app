@@ -3,7 +3,7 @@ import streamlit as st
 page_bg_img = f"""
 <style>
 .stApp {{
-    background-image: url("https://github.com/workmeshari1/disaster-app/blob/main/assets.png");
+    background-image: url("https://github.com/workmeshari1/disaster-app/blob/bb4be38238ac06288848fa086e098f56b21e92b4/assets.png?raw=true");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -243,6 +243,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
