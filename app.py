@@ -1,4 +1,16 @@
 import streamlit as st
+import streamlit as st
+
+# إخفاء شعار ستريملت والمنيو والفوتر
+hide_st_style = """
+    <style>
+    #MainMenu {visibility: hidden;}    /* القائمة العلوية */
+    footer {visibility: hidden;}       /* الفوتر (شعار Streamlit) */
+    header {visibility: hidden;}       /* الهيدر */
+    .stDeployButton {display:none;}    /* زر Deploy */
+    </style>
+"""
+st.markdown(hide_st_style, unsafe_allow_html=True)
 import gspread
 from google.oauth2.service_account import Credentials
 import pandas as pd
@@ -218,6 +230,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
