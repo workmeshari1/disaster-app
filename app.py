@@ -37,7 +37,7 @@ footer {visibility: hidden;}
 header {visibility: hidden;}
 .stDeployButton {display:none;}
 button[kind="header"] {display:none;}
-[data-testid="stDecoration"] {display: none !important;} /* يخفي أي أيقونات إضافية أسفل البحث */
+[data-testid="stDecoration"] {display:none !important;}
 </style>
 """
 st.markdown(hide_st_style, unsafe_allow_html=True)
@@ -46,7 +46,7 @@ st.markdown(hide_st_style, unsafe_allow_html=True)
 st.markdown("""
 <style>
 h1 { 
-    font-size: 28px !important;  /* حجم العنوان الرئيسي */
+    font-size: 26px !important;
     color: #ffffff;
 }
 </style>
@@ -96,7 +96,6 @@ try:
     df, PASSWORD = load_data_and_password()
 except Exception as e:
     st.error(f"❌ فشل الاتصال بقاعدة البيانات: {str(e)}")
-    st.info("تأكد من إعداد متغيرات البيئة أو أسرار Streamlit بشكل صحيح.")
     st.stop()
 
 DESC_COL = "وصف الحالة أو الحدث"
@@ -115,25 +114,21 @@ for col in [DESC_COL, ACTION_COL]:
 if SYN_COL not in df.columns:
     df[SYN_COL] = ""
 
-# --- إدارة الحالة ---
+# --- إدارة حالة المصادقة ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
-# --- شاشة تسجيل الدخول باستخدام form (Enter يعمل) ---
 if not st.session_state.authenticated:
-    st.subheader("ادخل الرقم السري")
-
+    # Form يسمح بالضغط على Enter أو زر دخول
     with st.form("login_form"):
-        password_input = st.text_input("الرقم السري", type="password")
+        password_input = st.text_input("", type="password", placeholder="الرقم السري")
         submitted = st.form_submit_button("دخول")
-
         if submitted:
             if password_input == str(PASSWORD):
                 st.session_state.authenticated = True
-                st.experimental_rerun()  # إعادة تحميل التطبيق بعد المصادقة
+                st.experimental_rerun()
             else:
                 st.error("❌ الرقم السري غير صحيح")
-
     st.stop()  # يمنع ظهور البحث قبل المصادقة
 
 # --- واجهة البحث بعد المصادقة ---
