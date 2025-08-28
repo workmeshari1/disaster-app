@@ -6,6 +6,7 @@ from sentence_transformers import SentenceTransformer, util
 import torch
 import os
 
+# --- إعداد الصفحة ---
 st.set_page_config(page_title="⚡ إدارة الكوارث والأزمات", layout="centered", initial_sidebar_state="collapsed")
 
 # --- الخلفية responsive ---
@@ -28,14 +29,14 @@ page_bg_img = f"""
 """
 st.markdown(page_bg_img, unsafe_allow_html=True)
 
-# --- إخفاء شعار Streamlit والفوتر والهيدر والأيقونات الصغيرة ---
+# --- إخفاء الشعار والفوتر والهيدر والأيقونات الصغيرة ---
 hide_st_style = """
 <style>
-#MainMenu {visibility: hidden;}   /* يخفي القائمة العلوية */
-footer {visibility: hidden;}      /* يخفي الفوتر */
-header {visibility: hidden;}      /* يخفي الهيدر */
-.stDeployButton {display:none;}   /* يخفي زر Deploy */
-button[kind="header"] {display:none;} /* يخفي الأيقونات تحت البحث */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+.stDeployButton {display:none;}
+button[kind="header"] {display:none;}
 </style>
 """
 st.markdown(hide_st_style, unsafe_allow_html=True)
@@ -103,13 +104,17 @@ for col in [DESC_COL, ACTION_COL]:
 if SYN_COL not in df.columns:
     df[SYN_COL] = ""
 
-# --- تسجيل الدخول ---
+# --- إدارة الحالة ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
+if "pass_input" not in st.session_state:
+    st.session_state.pass_input = ""
+
+# --- شاشة تسجيل الدخول ---
 if not st.session_state.authenticated:
     st.subheader("ادخل الرقم السري")
-    password_input = st.text_input("الرقم السري", type="password", key="pass_input")
+    st.text_input("الرقم السري", type="password", key="pass_input")
 
     def check_password():
         if st.session_state.pass_input == str(PASSWORD):
@@ -119,9 +124,11 @@ if not st.session_state.authenticated:
         elif st.session_state.pass_input != "":
             st.error("❌ الرقم السري غير صحيح")
 
+    # تحقق عند الضغط على Enter
     if st.session_state.pass_input != "":
         check_password()
 
+    # زر دخول اختياري
     if st.button("دخول"):
         check_password()
 
