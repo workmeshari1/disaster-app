@@ -135,7 +135,6 @@ def check_password():
 # عندما يضغط Enter (على نفس الـ text_input)
 if st.session_state.pass_input != "":
     check_password()
-
 # زر دخول اختياري
 if st.button("دخول"):
     check_password()
@@ -145,7 +144,6 @@ if st.button("دخول"):
         else:
             st.error("❌ الرقم السري غير صحيح")
     st.stop()
-
 # بعد التحقق
 query = st.text_input("ابحث هنا:", placeholder="اكتب وصف الحالة…")
 if not query:
@@ -261,5 +259,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
