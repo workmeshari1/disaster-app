@@ -60,21 +60,22 @@ if q:
     except ValueError:
         pass  # مو رقم، يكمل البحث بالكلمات
 
-    # --------- 🔤 البحث بالكلمات ---------
-    matches = []
-    for _, row in df.iterrows():
-        synonyms = str(row.get(SYN_COL, "")).split(",")
-        for syn in synonyms:
-            syn = syn.strip()
-            if not syn:
-                continue
-            ratio = difflib.SequenceMatcher(None, q.lower(), syn.lower()).ratio()
-            if ratio > 0.7:
-                matches.append((row[DESC_COL], row[ACTION_COL]))
-                break
+# --------- 🔤 البحث بالكلمات بعد معالجة الأرقام ---------
+matches = []
+for _, row in df.iterrows():
+    synonyms = str(row.get(SYN_COL, "")).split(",")
+    for syn in synonyms:
+        syn = syn.strip()
+        if not syn:
+            continue
+        ratio = difflib.SequenceMatcher(None, q.lower(), syn.lower()).ratio()
+        if ratio > 0.7:
+            matches.append((row[DESC_COL], row[ACTION_COL]))
+            break
 
-    if matches:
-        for desc, action in matches:
-            st.write(f"**{desc}** ➝ {action}")
-    else:
-        st.warning("⚠️ لم يتم العثور على نتائج، جرّب كلمات أخرى.")
+if matches:
+    for desc, action in matches:
+        st.write(f"**{desc}** ➝ {action}")
+else:
+    st.warning("⚠️ لم يتم العثور على نتائج، جرّب كلمات أخرى.")
+
