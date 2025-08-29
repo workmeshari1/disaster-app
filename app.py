@@ -1,13 +1,14 @@
 import streamlit as st
-# --- الخلفية + إخفاء شعار ستريملت + تصغير العناوين ---
+# --- الخلفية مع إزاحة للأسفل + إخفاء الشعار والأيقونات + تصغير العناوين ---
 page_style = f"""
 <style>
 .stApp {{
     background-image: url("https://github.com/workmeshari1/disaster-app/blob/bb4be38238ac06288848fa086e098f56b21e92b4/assets.png?raw=true");
     background-size: cover;
-    background-position: center;
+    background-position: top center;
     background-repeat: no-repeat;
     background-attachment: fixed;
+    padding-top: 80px;  /* نزول الخلفية تحت الهيدر */
 }}
 
 /* للشاشات الصغيرة (جوال) */
@@ -15,6 +16,7 @@ page_style = f"""
     .stApp {{
         background-size: contain;
         background-position: top center;
+        padding-top: 60px;
     }}
 }}
 
@@ -33,8 +35,9 @@ page_style = f"""
 /* تصغير العناوين */
 h1 {{
     font-size: 26px !important;
-    color: #ffffff; /* أبيض عشان يبان على الخلفية */
+    color: #ffffff;
     text-align: center;
+    margin-top: -60px; /* يرفع العنوان فوق الخلفية */
 }}
 h2 {{
     font-size: 20px !important;
@@ -264,6 +267,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
