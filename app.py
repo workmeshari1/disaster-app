@@ -93,7 +93,6 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.subheader("ادخل الرقم السري")
     password = st.text_input("الرقم السري", type="password")
     if st.button("دخول"):
         if password == str(PASSWORD):
@@ -217,6 +216,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
