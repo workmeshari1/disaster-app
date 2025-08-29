@@ -106,7 +106,6 @@ if not st.session_state.authenticated:
 # بعد التحقق
 query = st.text_input("ابحث هنا:", placeholder="اكتب وصف الحالة…")
 if not query:
-    st.info("⚡ 🔥 🚔 🚗 🛢️ 💧")
     st.stop()
 
 # ---------- البحث الحرفي ----------
@@ -218,5 +217,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
