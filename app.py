@@ -1,4 +1,52 @@
 import streamlit as st
+# --- الخلفية + إخفاء شعار ستريملت + تصغير العناوين ---
+page_style = f"""
+<style>
+.stApp {{
+    background-image: url("https://github.com/workmeshari1/disaster-app/blob/bb4be38238ac06288848fa086e098f56b21e92b4/assets.png?raw=true");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}}
+
+/* للشاشات الصغيرة (جوال) */
+@media only screen and (max-width: 768px) {{
+    .stApp {{
+        background-size: contain;
+        background-position: top center;
+    }}
+}}
+
+/* إخفاء شعار streamlit والفوتر */
+#MainMenu, header, footer {{
+    visibility: hidden;
+}}
+
+/* إخفاء الأيقونات الصغيرة أسفل البحث */
+.st-emotion-cache-12fmjuu, 
+[data-testid="stDecoration"], 
+.stDeployButton {{
+    display: none !important;
+}}
+
+/* تصغير العناوين */
+h1 {{
+    font-size: 26px !important;
+    color: #ffffff; /* أبيض عشان يبان على الخلفية */
+    text-align: center;
+}}
+h2 {{
+    font-size: 20px !important;
+    color: #ffffff;
+}}
+h3 {{
+    font-size: 18px !important;
+    color: #ffffff;
+}}
+</style>
+"""
+st.markdown(page_style, unsafe_allow_html=True)
 import gspread
 from google.oauth2.service_account import Credentials
 import pandas as pd
@@ -216,6 +264,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
