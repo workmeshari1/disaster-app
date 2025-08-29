@@ -162,12 +162,16 @@ def process_number_input(q, df, syn_col, action_col):
             if matched_action:
                 break
 
+        # التحقق من النطاقات المحددة (2000-4999 و5000-∞)
         if matched_action:
             st.success(f"📌 {matched_action}")
             return True
         else:
             st.warning("لم يتم العثور على تطابق للرقم المدخل.")
             return False
+
+    except ValueError:
+        return False  # مو رقم، ينتقل للبحث النصي
 
     except ValueError:
         return False  # مو رقم، ينتقل للبحث النصي
@@ -332,3 +336,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
