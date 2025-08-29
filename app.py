@@ -160,7 +160,7 @@ if not query:
 
 q = query.strip().lower()
 
-# --------- 🔢 معالجة الأرقام ---------
+# --------- 🔢 معالجة الأرقام مع دعم النطاقات والقيم المتعددة ---------
 try:
     number = int(q)
     matched_action = None
@@ -168,14 +168,32 @@ try:
     for _, row in df.iterrows():
         synonyms = str(row.get(SYN_COL, "")).replace(" ", "")
 
-        if "-" in synonyms:  # مكتوبة كمدى
-            parts = synonyms.split("-")
-            min_val = int(parts[0])
-            max_val = 999999999 if parts[1] in ["∞", "inf"] else int(parts[1])
+        # نفصل بالقيم أو النطاقات المفصولة بفواصل
+        for syn in synonyms.split(","):
+            if not syn:
+                continue
 
-            if min_val <= number <= max_val:
-                matched_action = row[ACTION_COL]
-                break
+            if "-" in syn:  # مكتوبة كمدى
+                parts = syn.split("-")
+                try:
+                    min_val = int(parts[0])
+                    max_val = 999999999 if parts[1] in ["∞", "inf"] else int(parts[1])
+                except:
+                    continue
+
+                if min_val <= number <= max_val:
+                    matched_action = row[ACTION_COL]
+                    break
+            else:  # قيمة مفردة
+                try:
+                    if number == int(syn):
+                        matched_action = row[ACTION_COL]
+                        break
+                except:
+                    continue
+
+        if matched_action:
+            break
 
     if matched_action:
         st.success(f"📌 {matched_action}")
@@ -183,7 +201,6 @@ try:
 
 except ValueError:
     pass  # مو رقم، يكمل البحث بالكلمات
-
 # --------- 📝 البحث النصي كما هو عندك ---------
 words = [w for w in q.split() if w]
 literal_results = []
@@ -300,6 +317,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
