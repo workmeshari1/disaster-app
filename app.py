@@ -1,4 +1,11 @@
 import streamlit as st
+import gspread
+from google.oauth2.service_account import Credentials
+import pandas as pd
+from sentence_transformers import SentenceTransformer, util
+import torch
+import os
+
 # --- الخلفية مع إزاحة للأسفل + إخفاء الشعار والأيقونات + تصغير العناوين ---
 page_style = f"""
 <style>
@@ -50,12 +57,6 @@ h3 {{
 </style>
 """
 st.markdown(page_style, unsafe_allow_html=True)
-import gspread
-from google.oauth2.service_account import Credentials
-import pandas as pd
-from sentence_transformers import SentenceTransformer, util
-import torch
-import os
 
 st.set_page_config(page_title="⚡ إدارة الكوارث والأزمات", layout="centered", initial_sidebar_state="collapsed")
 
@@ -69,12 +70,10 @@ def load_model():
 # --- قراءة البيانات + كلمة المرور من الشيت (كل 10 دق) ---
 @st.cache_data(ttl=600)
 def load_data_and_password():
-    # Get credentials from environment or secrets
     try:
         if hasattr(st, 'secrets') and "GOOGLE_CREDENTIALS" in st.secrets:
             creds_info = dict(st.secrets["GOOGLE_CREDENTIALS"])
         else:
-            # Fallback to environment variable
             import json
             creds_json = os.getenv("GOOGLE_CREDENTIALS", "{}")
             creds_info = json.loads(creds_json)
@@ -82,7 +81,6 @@ def load_data_and_password():
         creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
         client = gspread.authorize(creds)
 
-        # Get sheet ID from secrets or environment
         if hasattr(st, 'secrets') and "SHEET" in st.secrets:
             sheet_id = st.secrets["SHEET"]["id"]
         else:
@@ -94,25 +92,90 @@ def load_data_and_password():
         data = ws.get_all_records()
         df = pd.DataFrame(data)
 
-        # كلمة المرور من E1 (صف 1 عمود 5)
         password_value = ws.cell(1, 5).value
-
         return df, password_value
     except Exception as e:
         raise Exception(f"Failed to connect to Google Sheets: {str(e)}")
 
-
-# --- حساب إمبادنج للوصف (يتحدّث فقط عند تغيّر البيانات) ---
+# --- حساب إمبادنج للوصف ---
 @st.cache_data
 def compute_embeddings(descriptions: list[str]):
     model = load_model()
     return model.encode(descriptions, convert_to_tensor=True)
 
+# --- دالة للتحقق من الأرقام ضمن نطاق أو قيمة مفردة ---
+def is_number_in_range(number, synonym):
+    """
+    تحقق مما إذا كان الرقم يقع ضمن نطاق أو يساوي قيمة مفردة.
+    
+    Args:
+        number (int): الرقم المدخل للمقارنة.
+        synonym (str): النطاق (مثل "10-20") أو القيمة المفردة (مثل "15").
+    
+    Returns:
+        bool: True إذا كان الرقم يتطابق مع النطاق أو القيمة، False عكس ذلك.
+    """
+    try:
+        if "-" in synonym:
+            parts = synonym.split("-")
+            if len(parts) != 2 or not parts[0].strip() or not parts[1].strip():
+                return False
+            min_val = int(parts[0])
+            max_val = float('inf') if parts[1] in ["∞", "inf"] else int(parts[1])
+            return min_val <= number <= max_val
+        else:
+            return number == int(synonym)
+    except ValueError as e:
+        print(f"خطأ في معالجة القيمة أو النطاق '{synonym}': {e}")
+        return False
+
+# --- دالة لمعالجة الرقم المدخل ---
+def process_number_input(q, df, syn_col, action_col):
+    """
+    معالجة الرقم المدخل والبحث عن إجراء مطابق في DataFrame.
+    
+    Args:
+        q (str): المدخل (يفترض أنه رقم).
+        df (pd.DataFrame): DataFrame يحتوي على أعمدة المرادفات والإجراءات.
+        syn_col (str): اسم عمود المرادفات.
+        action_col (str): اسم عمود الإجراءات.
+    
+    Returns:
+        bool: True إذا تم العثور على تطابق وتم عرضه، False عكس ذلك.
+    """
+    try:
+        number = int(q)
+        matched_action = None
+
+        for _, row in df.iterrows():
+            synonyms = str(row.get(syn_col, "")).strip()
+            if not synonyms:
+                continue
+                
+            for syn in synonyms.split(","):
+                syn = syn.strip()
+                if not syn:
+                    continue
+                if is_number_in_range(number, syn):
+                    matched_action = row[action_col]
+                    break
+            if matched_action:
+                break
+
+        if matched_action:
+            st.success(f"📌 {matched_action}")
+            return True
+        else:
+            st.warning("لم يتم العثور على تطابق للرقم المدخل.")
+            return False
+
+    except ValueError:
+        return False  # مو رقم، ينتقل للبحث النصي
 
 # ============== واجهة ==============
 st.title("⚡ دائرة إدارة الكوارث والأزمات الصناعية")
 
-# جرّب تحميل البيانات
+# جرب تحميل البيانات
 try:
     df, PASSWORD = load_data_and_password()
 except Exception as e:
@@ -125,7 +188,6 @@ DESC_COL = "وصف الحالة أو الحدث"
 ACTION_COL = "الإجراء"
 SYN_COL = "مرادفات للوصف"
 
-# Check if dataframe is empty
 if df.empty:
     st.error("❌ لا توجد بيانات في الجدول. تأكد من وجود بيانات في Google Sheet.")
     st.stop()
@@ -161,57 +223,11 @@ if not query:
 q = query.strip().lower()
 
 # --------- 🔢 معالجة الأرقام مع دعم النطاقات والقيم المتعددة ---------
-try:
-    number = int(q)
-    matched_action = None
-
-    for _, row in df.iterrows():
-        synonyms = str(row.get(SYN_COL, "")).replace(" ", "")
-
-        # نفصل بالقيم أو النطاقات المفصولة بفواصل
-        for syn in synonyms.split(","):
-            if not syn:
-                continue
-
-            if "-" in syn:  # مكتوبة كمدى
-                parts = syn.split("-")
-                try:
-                    min_val = int(parts[0])
-                    max_val = 999999999 if parts[1] in ["∞", "inf"] else int(parts[1])
-                except:
-                    continue
-
-                if min_val <= number <= max_val:
-                    matched_action = row[ACTION_COL]
-                    break
-            else:  # قيمة مفردة
-                try:
-                    if number == int(syn):
-                        matched_action = row[ACTION_COL]
-                        break
-                except:
-                    continue
-
-        if matched_action:
-            break
-
-    if matched_action:
-        st.success(f"📌 {matched_action}")
-        st.stop()
-
-except ValueError:
-    pass  # مو رقم، يكمل البحث بالكلمات
-# --------- 📝 البحث النصي كما هو عندك ---------
-words = [w for w in q.split() if w]
-literal_results = []
-synonym_results = []
-if not query:
+if process_number_input(q, df, SYN_COL, ACTION_COL):
     st.stop()
 
-# ---------- البحث الحرفي ----------
-q = query.strip().lower()
+# --------- 📝 البحث النصي ---------
 words = [w for w in q.split() if w]
-
 literal_results = []
 synonym_results = []
 
@@ -272,7 +288,6 @@ else:
                 st.subheader("🧐 يمكن قصدك:")
                 found_results = False
                 for score, idx in zip(top_scores, top_indices):
-                    # Only show results with reasonable similarity (above 0.3)
                     if float(score) > 0.3:
                         found_results = True
                         r = df.iloc[int(idx.item())]
@@ -317,10 +332,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
-
-
-
-
-
