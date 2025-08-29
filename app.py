@@ -1,167 +1,162 @@
 import streamlit as st
-# --- الخلفية responsive ---
-page_bg_img = f"""
-<style>
-.stApp {{
-    background-image: url("https://github.com/workmeshari1/disaster-app/blob/bb4be38238ac06288848fa086e098f56b21e92b4/assets.png?raw=true");
-    background-size: cover;          /* يغطي كامل الشاشة */
-    background-position: center;     /* يركّز الصورة */
-    background-repeat: no-repeat;    /* يمنع تكرار الصورة */
-    background-attachment: fixed;    /* تثبيت الصورة عند التمرير */
-}}
-@media only screen and (max-width: 768px) {{
-    .stApp {{
-        background-size: contain;    /* تتناسب الصورة مع عرض الشاشة على الجوال */
-        background-position: top center;
-    }}
-}}
-</style>
-"""
-st.markdown(page_bg_img, unsafe_allow_html=True)
-# --- إخفاء شعار Streamlit والفوتر والأيقونات الصغيرة ---
-hide_st_style = """
-<style>
-footer {visibility: hidden;}           /* يخفي الشعار أسفل */
-.stDeployButton {display:none;}        /* يخفي زر Deploy */
-button[kind="header"] {display: none;} /* يخفي الأيقونات الصغيرة تحت البحث */
-</style>
-"""
-st.markdown(hide_st_style, unsafe_allow_html=True)
 import gspread
 from google.oauth2.service_account import Credentials
 import pandas as pd
-from sentence_transformers import SentenceTransformer, util
+from sentence_transformers import SentenceTransformer
 import torch
 import os
 
+# --- إعداد الصفحة ---
 st.set_page_config(page_title="⚡ إدارة الكوارث والأزمات", layout="centered", initial_sidebar_state="collapsed")
 
+# --- الخلفية responsive ---
+page_bg_img = """
+<style>
+.stApp {
+    background-image: url("https://github.com/workmeshari1/disaster-app/blob/bb4be38238ac06288848fa086e098f56b21e92b4/assets.png?raw=true");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+@media only screen and (max-width: 768px) {
+    .stApp {
+        background-size: contain;
+        background-position: top center;
+    }
+}
+</style>
+"""
+st.markdown(page_bg_img, unsafe_allow_html=True)
+
+# --- إخفاء الشعار والفوتر والهيدر والأيقونات الصغيرة ---
+hide_st_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+.stDeployButton {display:none;}
+button[kind="header"] {display:none;}
+[data-testid="stDecoration"] {display:none !important;}
+</style>
+"""
+st.markdown(hide_st_style, unsafe_allow_html=True)
+
+# --- تصغير عنوان الصفحة ورفعه للأعلى ---
+st.markdown("""
+<style>
+h1 { 
+    font-size: 26px !important;
+    color: #ffffff;
+    margin-top: -40px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --- إعدادات Google Sheets ---
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-# --- تحميل الموديل مرة واحدة ---
 @st.cache_resource
 def load_model():
     return SentenceTransformer("Omartificial-Intelligence-Space/Arabert-all-nli-triplet-Matryoshka")
 
-# --- قراءة البيانات + كلمة المرور من الشيت (كل 10 دق) ---
 @st.cache_data(ttl=600)
 def load_data_and_password():
-    # Get credentials from environment or secrets
     try:
         if hasattr(st, 'secrets') and "GOOGLE_CREDENTIALS" in st.secrets:
             creds_info = dict(st.secrets["GOOGLE_CREDENTIALS"])
         else:
-            # Fallback to environment variable
             import json
             creds_json = os.getenv("GOOGLE_CREDENTIALS", "{}")
             creds_info = json.loads(creds_json)
-        
         creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
         client = gspread.authorize(creds)
-
-        # Get sheet ID from secrets or environment
         if hasattr(st, 'secrets') and "SHEET" in st.secrets:
             sheet_id = st.secrets["SHEET"]["id"]
         else:
             sheet_id = os.getenv("SHEET_ID", "")
-        
         sheet = client.open_by_key(sheet_id)
         ws = sheet.sheet1
-
         data = ws.get_all_records()
         df = pd.DataFrame(data)
-
-        # كلمة المرور من E1 (صف 1 عمود 5)
         password_value = ws.cell(1, 5).value
-
         return df, password_value
     except Exception as e:
         raise Exception(f"Failed to connect to Google Sheets: {str(e)}")
 
-
-# --- حساب إمبادنج للوصف (يتحدّث فقط عند تغيّر البيانات) ---
 @st.cache_data
 def compute_embeddings(descriptions: list[str]):
     model = load_model()
     return model.encode(descriptions, convert_to_tensor=True)
 
-
 # ============== واجهة ==============
 st.title("⚡ دائرة إدارة الكوارث والأزمات الصناعية")
 
-# جرّب تحميل البيانات
+# تحميل البيانات
 try:
     df, PASSWORD = load_data_and_password()
 except Exception as e:
     st.error(f"❌ فشل الاتصال بقاعدة البيانات: {str(e)}")
-    st.info("تأكد من إعداد متغيرات البيئة أو أسرار Streamlit بشكل صحيح.")
     st.stop()
 
-# التحقق من الأعمدة المطلوبة
 DESC_COL = "وصف الحالة أو الحدث"
 ACTION_COL = "الإجراء"
 SYN_COL = "مرادفات للوصف"
 
-# Check if dataframe is empty
 if df.empty:
-    st.error("❌ لا توجد بيانات في الجدول. تأكد من وجود بيانات في Google Sheet.")
+    st.error("❌ لا توجد بيانات في الجدول.")
     st.stop()
 
 for col in [DESC_COL, ACTION_COL]:
     if col not in df.columns:
-        st.error(f"عمود مفقود في Google Sheet: '{col}'. تأكد من اسم العمود حرفيًا.")
-        st.info(f"الأعمدة المتاحة: {list(df.columns)}")
+        st.error(f"عمود مفقود: '{col}'")
         st.stop()
 
 if SYN_COL not in df.columns:
-    df[SYN_COL] = ""  # نضيفه فارغ إذا ناقص
+    df[SYN_COL] = ""
 
-# نص الإدخال للرقم السري
-password = st.text_input("الرقم السري", type="password", key="pass_input")
+# --- إدارة حالة المصادقة ---
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
 
-# دالة للتحقق من الرقم السري
-def check_password():
-    if st.session_state.pass_input == str(PASSWORD):
-        st.session_state.authenticated = True
-        st.session_state.pass_input = ""
-        st.experimental_rerun()
-    elif st.session_state.pass_input != "":
-        st.error("❌ الرقم السري غير صحيح")
-
-# تحقق عند الضغط على Enter (في text_input)
-if st.session_state.pass_input != "":
-    check_password()
-
-# زر دخول اختياري
-if st.button("دخول"):
-    check_password()
-# بعد التحقق
-query = st.text_input("ابحث هنا:", placeholder="اكتب وصف الحالة…")
-if not query:
-    st.info("⚡ 🔥 🚔 🚗 🛢️ 💧")
+if not st.session_state.authenticated:
+    st.markdown("## تسجيل الدخول")
+    with st.form("login_form", clear_on_submit=False):
+        st.markdown("<div style='text-align:right;font-size:24px;'>🔒</div>", unsafe_allow_html=True)
+        password_input = st.text_input(" ", type="password", placeholder="الرقم السري")
+        submitted = st.form_submit_button("دخول")
+        if submitted:
+            if password_input == str(PASSWORD):
+                st.session_state.authenticated = True
+                st.experimental_rerun()
+            else:
+                st.error("❌ الرقم السري غير صحيح")
     st.stop()
 
-# ---------- البحث الحرفي ----------
+# --- واجهة البحث بعد المصادقة ---
+st.markdown("<div style='text-align:right;font-size:24px;'>🔍</div>", unsafe_allow_html=True)
+query = st.text_input("ابحث هنا:", placeholder="اكتب وصف الحالة…")
+if not query:
+    st.stop()
+
 q = query.strip().lower()
 words = [w for w in q.split() if w]
-
 literal_results = []
 synonym_results = []
 
-# 1) الحرفي من الوصف
+# البحث الحرفي
 for _, row in df.iterrows():
     text = str(row[DESC_COL]).lower()
     if all(w in text for w in words):
         literal_results.append(row)
 
-# 2) الحرفي من المرادفات
+# البحث بالمرادفات
 if not literal_results:
     for _, row in df.iterrows():
         syn_text = str(row.get(SYN_COL, "")).lower()
         if any(w in syn_text for w in words):
             synonym_results.append(row)
 
-# عرض أقرب 3 نتائج من كل نوع
 def render_card(r, icon="🔶"):
     st.markdown(
         f"""
@@ -186,51 +181,9 @@ elif synonym_results:
     for r in synonym_results[:3]:
         render_card(r, "📌")
 else:
-    st.warning("❌ لم يتم العثور على نتائج.. وش رايك تسأل الذكي 👇")
-    if st.button("🤖 اسأل الذكي"):
-        try:
-            with st.spinner("جاري البحث الذكي..."):
-                model = load_model()
-                descriptions = df[DESC_COL].fillna("").astype(str).tolist()
-                
-                if not descriptions or all(not desc.strip() for desc in descriptions):
-                    st.error("❌ لا توجد أوصاف صالحة في البيانات.")
-                    st.stop()
-                
-                embeddings = compute_embeddings(descriptions)
-                query_embedding = model.encode(query, convert_to_tensor=True)
-                cosine_scores = util.pytorch_cos_sim(query_embedding, embeddings)[0]
-                top_scores, top_indices = torch.topk(cosine_scores, k=min(3, len(df)))
+    st.warning("❌ لم يتم العثور على نتائج")
 
-                st.subheader("🧐 يمكن قصدك:")
-                found_results = False
-                for score, idx in zip(top_scores, top_indices):
-                    # Only show results with reasonable similarity (above 0.3)
-                    if float(score) > 0.3:
-                        found_results = True
-                        r = df.iloc[int(idx.item())]
-                        st.markdown(
-                            f"""
-                            <div style='background:#444;color:#fff;padding:12px;border-radius:8px;direction:rtl;text-align:right;font-size:18px;margin-bottom:10px;'>
-                                <div style="font-size:22px;margin-bottom:6px;">🤖 </div>
-                                <b>الوصف:</b> {r[DESC_COL]}<br>
-                                <b>الإجراء:</b>
-                                <span style='background:#ff6600;color:#0a1e3f;padding:4px 8px;border-radius:6px;display:inline-block;margin-top:4px;'>
-                                    {r[ACTION_COL]}
-                                </span><br>
-                                <span style='font-size:14px;color:orange;'>درجة التشابه: {float(score):.2f}</span>
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-                
-                if not found_results:
-                    st.info("🤖 لم يتم العثور على نتائج مشابهة كافية. حاول إعادة صياغة سؤالك.")
-                    
-        except Exception as e:
-            st.error(f"❌ خطأ في البحث الذكي: {str(e)}")
-
-# شريط جانبي للمعلومات الإضافية
+# --- شريط جانبي ---
 with st.sidebar:
     st.markdown("### معلومات النظام")
     st.info(f"📊 عدد الحالات المسجلة: {len(df)}")
