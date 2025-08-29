@@ -158,6 +158,39 @@ query = st.text_input("ابحث هنا:", placeholder="اكتب وصف الحا�
 if not query:
     st.stop()
 
+q = query.strip().lower()
+
+# --------- 🔢 معالجة الأرقام ---------
+try:
+    number = int(q)
+    matched_action = None
+
+    for _, row in df.iterrows():
+        synonyms = str(row.get(SYN_COL, "")).replace(" ", "")
+
+        if "-" in synonyms:  # مكتوبة كمدى
+            parts = synonyms.split("-")
+            min_val = int(parts[0])
+            max_val = 999999999 if parts[1] in ["∞", "inf"] else int(parts[1])
+
+            if min_val <= number <= max_val:
+                matched_action = row[ACTION_COL]
+                break
+
+    if matched_action:
+        st.success(f"📌 {matched_action}")
+        st.stop()
+
+except ValueError:
+    pass  # مو رقم، يكمل البحث بالكلمات
+
+# --------- 📝 البحث النصي كما هو عندك ---------
+words = [w for w in q.split() if w]
+literal_results = []
+synonym_results = []
+if not query:
+    st.stop()
+
 # ---------- البحث الحرفي ----------
 q = query.strip().lower()
 words = [w for w in q.split() if w]
@@ -267,6 +300,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
