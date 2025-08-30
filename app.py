@@ -10,7 +10,7 @@ import os
 page_style = f"""
 <style>
 .stApp {{
-    background-image: url("https://github.com/workmeshari1/disaster-app/blob/bb4be38238ac06288848fa086e098f56b21e92b4/assets.png?raw=true");
+    background-image: url("https://github.com/workmeshari1/disaster-app/blob/6b907779e30e18ec6ebec68b90e2558d91e5339b/assets.png?raw=true");
     background-size: cover;
     background-position: top center;
     background-repeat: no-repeat;
@@ -335,6 +335,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
