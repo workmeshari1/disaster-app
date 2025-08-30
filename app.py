@@ -129,20 +129,7 @@ def is_number_in_range(number, synonym):
         print(f"خطأ في معالجة القيمة أو النطاق '{synonym}': {e}")
         return False
 
-# --- دالة لمعالجة الرقم المدخل ---
 def process_number_input(q, df, syn_col, action_col):
-    """
-    معالجة الرقم المدخل والبحث عن إجراء مطابق في DataFrame.
-    
-    Args:
-        q (str): المدخل (يفترض أنه رقم).
-        df (pd.DataFrame): DataFrame يحتوي على أعمدة المرادفات والإجراءات.
-        syn_col (str): اسم عمود المرادفات.
-        action_col (str): اسم عمود الإجراءات.
-    
-    Returns:
-        bool: True إذا تم العثور على تطابق وتم عرضه، False عكس ذلك.
-    """
     try:
         number = int(q)
         matched_action = None
@@ -151,7 +138,7 @@ def process_number_input(q, df, syn_col, action_col):
             synonyms = str(row.get(syn_col, "")).strip()
             if not synonyms:
                 continue
-                
+
             for syn in synonyms.split(","):
                 syn = syn.strip()
                 if not syn:
@@ -162,7 +149,6 @@ def process_number_input(q, df, syn_col, action_col):
             if matched_action:
                 break
 
-        # التحقق من النطاقات المحددة (2000-4999 و5000-∞)
         if matched_action:
             st.success(f"📌 {matched_action}")
             return True
@@ -173,8 +159,6 @@ def process_number_input(q, df, syn_col, action_col):
     except ValueError:
         return False  # مو رقم، ينتقل للبحث النصي
 
-    except ValueError:
-        return False  # مو رقم، ينتقل للبحث النصي
 
 # ============== واجهة ==============
 st.title("⚡ دائرة إدارة الكوارث والأزمات الصناعية")
@@ -336,4 +320,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
