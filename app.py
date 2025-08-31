@@ -265,15 +265,15 @@ def render_card(r, icon="🔶"):
 
 if literal_results:
     st.subheader("🔍 النتائج المطابقة:")
-    for r in literal_results[:3]:
+    for r in literal_results[:5]:
         render_card(r, "🔍")
 elif synonym_results:
     st.subheader("📌 يمكن قصدك:")
     for r in synonym_results[:3]:
         render_card(r, "📌")
 else:
-    st.warning("❌ لم يتم العثور على نتائج.. وش رايك تسأل الذكي 👇")
-    if st.button("🤖 اسأل الذكي"):
+    st.warning("❌ لم يتم العثور على نتائج.. وش رايك تستخدم البحث الذكي 👇")
+    if st.button("🤖 البجث الذكي"):
         try:
             with st.spinner("جاري البحث الذكي..."):
                 model = load_model()
@@ -286,7 +286,7 @@ else:
                 embeddings = compute_embeddings(descriptions)
                 query_embedding = model.encode(query, convert_to_tensor=True)
                 cosine_scores = util.pytorch_cos_sim(query_embedding, embeddings)[0]
-                top_scores, top_indices = torch.topk(cosine_scores, k=min(3, len(df)))
+                top_scores, top_indices = torch.topk(cosine_scores, k=min(5, len(df)))
 
                 st.subheader("🧐 يمكن قصدك:")
                 found_results = False
@@ -335,6 +335,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
