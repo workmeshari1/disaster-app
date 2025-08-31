@@ -71,12 +71,19 @@ def load_model():
 @st.cache_data(ttl=600)
 def load_data_and_password():
     try:
-        if hasattr(st, 'secrets') and "GOOGLE_CREDENTIALS" in st.secrets:
-            creds_info = dict(st.secrets["GOOGLE_CREDENTIALS"])
-        else:
-            import json
-            creds_json = os.getenv("GOOGLE_CREDENTIALS", "{}")
-            creds_info = json.loads(creds_json)
+        import json
+import os
+
+# --- قراءة البيانات + كلمة المرور من الشيت (كل 10 دق) ---
+@st.cache_data(ttl=600)
+def load_data_and_password():
+    try:
+        creds_json = os.getenv("GOOGLE_CREDENTIALS", "{}")
+        if not creds_json or creds_json == "{}":
+            raise ValueError("GOOGLE_CREDENTIALS environment variable is not set or is empty.")
+        creds_info = json.loads(creds_json)
+        
+        # ... بقية الكود كما هو
         
         creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
         client = gspread.authorize(creds)
@@ -335,6 +342,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
