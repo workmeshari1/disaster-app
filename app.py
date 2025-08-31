@@ -11,18 +11,19 @@ page_style = f"""
 <style>
 .stApp {{
     background-image: url("https://github.com/workmeshari1/disaster-app/blob/6b907779e30e18ec6ebec68b90e2558d91e5339b/assets.png?raw=true");
-    background-size: cover;
-    background-position: top center;
+    background-size: cover; /* تغطي الخلفية كامل العنصر */
+    background-position: center top; /* تركز الجزء المهم في الأعلى والوسط */
     background-repeat: no-repeat;
     background-attachment: fixed;
+    min-height: 100vh;
     padding-top: 80px;  /* نزول الخلفية تحت الهيدر */
 }}
 
 /* للشاشات الصغيرة (جوال) */
 @media only screen and (max-width: 768px) {{
     .stApp {{
-        background-size: contain;
-        background-position: top center;
+        background-size: cover; /* بدل contain لتغطية الشاشة بالكامل */
+        background-position: center top; /* الجزء المهم في الأعلى */
         padding-top: 60px;
     }}
 }}
@@ -105,16 +106,6 @@ def compute_embeddings(descriptions: list[str]):
 
 # --- دالة للتحقق من الأرقام ضمن نطاق أو قيمة مفردة ---
 def is_number_in_range(number, synonym):
-    """
-    تحقق مما إذا كان الرقم يقع ضمن نطاق أو يساوي قيمة مفردة.
-    
-    Args:
-        number (int): الرقم المدخل للمقارنة.
-        synonym (str): النطاق (مثل "10-20") أو القيمة المفردة (مثل "15").
-    
-    Returns:
-        bool: True إذا كان الرقم يتطابق مع النطاق أو القيمة، False عكس ذلك.
-    """
     try:
         if "-" in synonym:
             parts = synonym.split("-")
@@ -150,7 +141,6 @@ def process_number_input(q, df, syn_col, action_col):
                 break
 
         if matched_row is not None:
-            # ✅ عرض النتيجة بنفس تنسيق كروت البحث النصي
             st.markdown(
                 f"""
                 <div style='background:#1f1f1f;color:#fff;padding:14px;border-radius:10px;
@@ -159,9 +149,7 @@ def process_number_input(q, df, syn_col, action_col):
                     <b>الوصف:</b> {matched_row.get("وصف الحالة أو الحدث", "—")}<br>
                     <b>الإجراء:</b>
                     <span style='background:#ff6600;color:#fff;padding:6px 10px;border-radius:6px;
-                                display:inline-block;margin-top:6px;'>
-                        {matched_row[action_col]}
-                    </span>
+                                display:inline-block;margin-top:6px;'>{matched_row[action_col]}</span>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -172,8 +160,7 @@ def process_number_input(q, df, syn_col, action_col):
             return False
 
     except ValueError:
-        return False  # مو رقم → ينتقل للبحث النصي
-
+        return False
 
 # ============== واجهة ==============
 st.title("⚡ دائرة إدارة الكوارث والأزمات الصناعية")
@@ -247,7 +234,7 @@ if not literal_results:
         if any(w in syn_text for w in words):
             synonym_results.append(row)
 
-# عرض أقرب 3 نتائج من كل نوع
+# عرض النتائج
 def render_card(r, icon="🔶"):
     st.markdown(
         f"""
@@ -273,21 +260,18 @@ elif synonym_results:
         render_card(r, "📌")
 else:
     st.warning("❌ لم يتم العثور على نتائج.. وش رايك تستخدم البحث الذكي 👇")
-    if st.button("🤖 البجث الذكي"):
+    if st.button("🤖 البحث الذكي"):
         try:
             with st.spinner("جاري البحث الذكي..."):
                 model = load_model()
                 descriptions = df[DESC_COL].fillna("").astype(str).tolist()
-                
                 if not descriptions or all(not desc.strip() for desc in descriptions):
                     st.error("❌ لا توجد أوصاف صالحة في البيانات.")
                     st.stop()
-                
                 embeddings = compute_embeddings(descriptions)
                 query_embedding = model.encode(query, convert_to_tensor=True)
                 cosine_scores = util.pytorch_cos_sim(query_embedding, embeddings)[0]
                 top_scores, top_indices = torch.topk(cosine_scores, k=min(5, len(df)))
-
                 st.subheader("🧐 يمكن قصدك:")
                 found_results = False
                 for score, idx in zip(top_scores, top_indices):
@@ -308,19 +292,16 @@ else:
                             """,
                             unsafe_allow_html=True,
                         )
-                
                 if not found_results:
                     st.info("🤖 لم يتم العثور على نتائج مشابهة كافية. حاول إعادة صياغة سؤالك.")
-                    
         except Exception as e:
             st.error(f"❌ خطأ في البحث الذكي: {str(e)}")
 
-# شريط جانبي للمعلومات الإضافية
+# شريط جانبي
 with st.sidebar:
     st.markdown("### معلومات النظام")
     st.info(f"📊 عدد الحالات المسجلة: {len(df)}")
     st.info("🔄 تحديث البيانات: كل 10 دقائق")
-    
     if st.button("🔒 تسجيل خروج"):
         st.session_state.authenticated = False
         st.rerun()
@@ -335,7 +316,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
-
-
