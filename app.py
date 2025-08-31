@@ -5,6 +5,7 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer, util
 import torch
 import os
+import json
 
 # --- الخلفية مع إزاحة للأسفل + إخفاء الشعار والأيقونات + تصغير العناوين ---
 page_style = f"""
@@ -71,27 +72,19 @@ def load_model():
 @st.cache_data(ttl=600)
 def load_data_and_password():
     try:
-        import json
-import os
-
-# --- قراءة البيانات + كلمة المرور من الشيت (كل 10 دق) ---
-@st.cache_data(ttl=600)
-def load_data_and_password():
-    try:
+        # قراءة GOOGLE_CREDENTIALS من متغيرات البيئة (خاص بـ Render)
         creds_json = os.getenv("GOOGLE_CREDENTIALS", "{}")
         if not creds_json or creds_json == "{}":
             raise ValueError("GOOGLE_CREDENTIALS environment variable is not set or is empty.")
         creds_info = json.loads(creds_json)
         
-        # ... بقية الكود كما هو
-        
         creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
         client = gspread.authorize(creds)
 
-        if hasattr(st, 'secrets') and "SHEET" in st.secrets:
-            sheet_id = st.secrets["SHEET"]["id"]
-        else:
-            sheet_id = os.getenv("SHEET_ID", "")
+        # قراءة SHEET_ID من متغيرات البيئة (خاص بـ Render)
+        sheet_id = os.getenv("SHEET_ID", "")
+        if not sheet_id:
+            raise ValueError("SHEET_ID environment variable is not set.")
         
         sheet = client.open_by_key(sheet_id)
         ws = sheet.sheet1
@@ -102,7 +95,7 @@ def load_data_and_password():
         password_value = ws.cell(1, 5).value
         return df, password_value
     except Exception as e:
-        raise Exception(f"Failed to connect to Google Sheets: {str(e)}")
+        raise Exception(f"❌ فشل الاتصال بقاعدة البيانات: {str(e)}")
 
 # --- حساب إمبادنج للوصف ---
 @st.cache_data
@@ -166,7 +159,7 @@ def process_number_input(q, df, syn_col, action_col):
                     <b>الوصف:</b> {matched_row.get("وصف الحالة أو الحدث", "—")}<br>
                     <b>الإجراء:</b>
                     <span style='background:#ff6600;color:#fff;padding:6px 10px;border-radius:6px;
-                                display:inline-block;margin-top:6px;'>
+                                 display:inline-block;margin-top:6px;'>
                         {matched_row[action_col]}
                     </span>
                 </div>
@@ -342,9 +335,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
-
-
-
-
