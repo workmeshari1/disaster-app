@@ -1,10 +1,12 @@
 services:
-  - type: web
-    name: my-streamlit-app   # غيّر الاسم زي ما تحب
-    env: python
-    plan: free               # تقدر تغيّرها إلى starter أو غيره
-    buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.10
+
+type: web
+name: crisis-app-streamlit
+env: python
+buildCommand: "pip install -r requirements.txt"
+startCommand: "streamlit run app.py"
+envVars:
+
+key: GOOGLE_CREDENTIALS
+
+key: SHEET_ID
