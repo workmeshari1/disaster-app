@@ -5,48 +5,44 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer, util
 import torch
 import os
-import json # تم إضافة هذه المكتبة
+import json
 
 # --- الخلفية مع إزاحة للأسفل + إخفاء الشعار والأيقونات + تصغير العناوين ---
 page_style = f"""
 <style>
 .stApp {{
     background-image: url("https://github.com/workmeshari1/disaster-app/blob/6b907779e30e18ec6ebec68b90e2558d91e5339b/assets.png?raw=true");
-    background-size: cover; /* تغطي الخلفية كامل العنصر */
-    background-position: center top; /* تركز الجزء المهم في الأعلى والوسط */
+    background-size: cover;
+    background-position: center top;
     background-repeat: no-repeat;
     background-attachment: fixed;
     min-height: 100vh;
-    padding-top: 80px;  /* نزول الخلفية تحت الهيدر */
+    padding-top: 80px;
 }}
 
-/* للشاشات الصغيرة (جوال) */
 @media only screen and (max-width: 768px) {{
     .stApp {{
-        background-size: cover; /* بدل contain لتغطية الشاشة بالكامل */
-        background-position: center top; /* الجزء المهم في الأعلى */
+        background-size: cover;
+        background-position: center top;
         padding-top: 60px;
     }}
 }}
 
-/* إخفاء شعار streamlit والفوتر */
 #MainMenu, header, footer {{
     visibility: hidden;
 }}
 
-/* إخفاء الأيقونات الصغيرة أسفل البحث */
-.st-emotion-cache-12fmjuu, 
-[data-testid="stDecoration"], 
+.st-emotion-cache-12fmjuu,
+[data-testid="stDecoration"],
 .stDeployButton {{
     display: none !important;
 }}
 
-/* تصغير العناوين */
 h1 {{
     font-size: 26px !important;
     color: #ffffff;
     text-align: center;
-    margin-top: -60px; /* يرفع العنوان فوق الخلفية */
+    margin-top: -60px;
 }}
 h2 {{
     font-size: 20px !important;
@@ -73,28 +69,39 @@ def load_model():
 @st.cache_data(ttl=600)
 def load_data_and_password():
     try:
-        # الكود الجديد: قراءة المتغيرات مباشرة من البيئة باستخدام os.getenv()
-        creds_json = os.getenv("GOOGLE_CREDENTIALS", None)
-        sheet_id = os.getenv("SHEET_ID", None)
+        # 1. أولاً، حاول تحميل الأسرار من متغيرات البيئة (لـ Render)
+        creds_json = os.getenv("GOOGLE_CREDENTIALS")
+        sheet_id = os.getenv("SHEET_ID")
+        
+        # 2. إذا لم يتم العثور عليها، حاول التحميل من أسرار Streamlit (لـ Streamlit Cloud)
+        if not creds_json and hasattr(st, 'secrets') and "GOOGLE_CREDENTIALS" in st.secrets:
+            creds_json = json.dumps(dict(st.secrets["GOOGLE_CREDENTIALS"]))
+            if "id" in st.secrets["SHEET"]:
+                sheet_id = st.secrets.SHEET["id"]
+            else:
+                raise ValueError("❌ 'id' is missing in the secrets.toml SHEET section.")
 
+        # 3. التحقق مما إذا تم العثور على الأسرار في أي من الموقعين
         if not creds_json or not sheet_id:
-            raise ValueError("❌ لم يتم العثور على متغيرات البيئة GOOGLE_CREDENTIALS و SHEET_ID. تأكد من إضافتها في إعدادات Render.")
+            raise ValueError("❌ لم يتم العثور على المتغيرات السرية. تأكد من إعدادها في إعدادات المنصة.")
         
         creds_info = json.loads(creds_json)
         
+        # الآن، اتصل بـ Google Sheets باستخدام بيانات الاعتماد التي تم تحميلها
         creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
         client = gspread.authorize(creds)
-
         sheet = client.open_by_key(sheet_id)
         ws = sheet.sheet1
 
         data = ws.get_all_records()
         df = pd.DataFrame(data)
-
         password_value = ws.cell(1, 5).value
         return df, password_value
     except Exception as e:
-        raise Exception(f"❌ فشل الاتصال بقاعدة البيانات: {str(e)}")
+        st.error(f"❌ فشل الاتصال بقاعدة البيانات: {str(e)}")
+        st.info("تأكد من إعداد متغيرات البيئة GOOGLE_CREDENTIALS و SHEET_ID بشكل صحيح في إعدادات Render، أو في ملف secrets.toml لـ Streamlit.")
+        st.stop()
+
 
 # --- حساب إمبادنج للوصف ---
 @st.cache_data
@@ -168,7 +175,7 @@ try:
     df, PASSWORD = load_data_and_password()
 except Exception as e:
     st.error(f"❌ فشل الاتصال بقاعدة البيانات: {str(e)}")
-    st.info("تأكد من إعداد متغيرات البيئة GOOGLE_CREDENTIALS و SHEET_ID بشكل صحيح في إعدادات Render.")
+    st.info("تأكد من إعداد متغيرات البيئة GOOGLE_CREDENTIALS و SHEET_ID بشكل صحيح في إعدادات Render، أو في ملف secrets.toml لـ Streamlit.")
     st.stop()
 
 # التحقق من الأعمدة المطلوبة
@@ -187,7 +194,7 @@ for col in [DESC_COL, ACTION_COL]:
         st.stop()
 
 if SYN_COL not in df.columns:
-    df[SYN_COL] = ""  # نضيفه فارغ إذا ناقص
+    df[SYN_COL] = ""
 
 # تسجيل الدخول
 if "authenticated" not in st.session_state:
