@@ -1,12 +1,16 @@
 services:
-
-type: web
-name: crisis-app-streamlit
-env: python
-buildCommand: "pip install -r requirements.txt"
-startCommand: "streamlit run app.py"
-envVars:
-
-key: GOOGLE_CREDENTIALS
-
-key: SHEET_ID
+  - type: web
+    name: crisis-app-streamlit
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "streamlit run app.py"
+    envVars:
+      - key: GOOGLE_CREDENTIALS
+        sync: false
+        # ملاحظة هامة: القيمة هنا يجب أن تكون فارغة
+        # القيمة الفعلية يجب أن تُضاف في إعدادات Render بشكل يدوي.
+        value: "" 
+      - key: SHEET_ID
+        sync: false
+        # القيمة هنا يجب أن تكون فارغة
+        value: ""
