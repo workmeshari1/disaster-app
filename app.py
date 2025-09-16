@@ -213,7 +213,7 @@ if not st.session_state.authenticated:
 import streamlit as st
 
 # عرض العنوان بخط كبير بدون أي مسافة تحته
-st.markdown('<div style="font-size:26px; font-weight:bold; line-height:1;">🔍 ابحث هنا:</div>', unsafe_allow_html=True)
+st.markdown('<div style="font-size:20px; font-weight:bold; line-height:1;">🔍 ابحث هنا</div>', unsafe_allow_html=True)
 
 # خانة الإدخال بدون عنوان نهائيًا
 query = st.text_input(
@@ -271,11 +271,11 @@ if literal_results:
     for r in literal_results[:5]:
         render_card(r, "🔍")
 elif synonym_results:
-    st.subheader("📌 يمكن قصدك:")
+    st.subheader("🔍 نتائج ذات صلة:")
     for r in synonym_results[:3]:
-        render_card(r, "📌")
+        render_card(r, "🔍")
 else:
-    st.warning("❌ لم يتم العثور على نتائج.. وش رايك تستخدم البحث الذكي 👇")
+    st.warning(" لم يتم العثور على نتائج❌.. يرجى استخدام البحث الذكي 👇")
     if st.button("🤖 البحث الذكي"):
         try:
             with st.spinner("جاري البحث الذكي..."):
@@ -288,7 +288,7 @@ else:
                 query_embedding = model.encode(query, convert_to_tensor=True)
                 cosine_scores = util.pytorch_cos_sim(query_embedding, embeddings)[0]
                 top_scores, top_indices = torch.topk(cosine_scores, k=min(5, len(df)))
-                st.subheader("🧐 يمكن قصدك:")
+                st.subheader("🤖 نتائج مقترحة:")
                 found_results = False
                 for score, idx in zip(top_scores, top_indices):
                     if float(score) > 0.3:
@@ -332,6 +332,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
