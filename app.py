@@ -212,17 +212,10 @@ if not st.session_state.authenticated:
 
 # بعد التحقق
 
-# عرض التسمية بخط كبير وملاصقة لخانة الإدخال
-st.markdown(
-    """
-    <label style="font-size: 26px; font-weight: bold; display: block; margin-bottom: -10px;">
-        🔍 ابحث هنا:
-    </label>
-    """, 
-    unsafe_allow_html=True
-)
+# عرض العنوان بخط كبير
+st.markdown('<h1>🔍 ابحث هنا</h1>', unsafe_allow_html=True)
 
-# مربع الإدخال مباشرة بعد التسمية
+# إدخال النص بدون عنوان (لأن العنوان ظهر فوق)
 query = st.text_input("", placeholder="اكتب وصف الحالة…")
 
 # التحقق من الإدخال
@@ -335,6 +328,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
