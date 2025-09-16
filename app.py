@@ -168,7 +168,7 @@ def process_number_input(q, df, syn_col, action_col):
         return False
 
 # ============== واجهة ==============
-st.title("⚡ دائرة إدارة الكوارث والأزمات الصناعية")
+st.title("⚡دائرة إدارة الكوارث والأزمات الصناعية")
 
 # جرب تحميل البيانات
 try:
@@ -321,3 +321,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
