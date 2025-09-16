@@ -210,17 +210,17 @@ if not st.session_state.authenticated:
             st.error("❌ الرقم السري غير صحيح")
     st.stop()
 
-# بعد التحقق
+import streamlit as st
 
-# عرض العنوان ملاصق تمامًا لخانة الإدخال
-st.markdown("""
-<label style="font-size:26px; font-weight:bold; display:block; margin-bottom: -8px;">
-    🔍 ابحث هنا:
-</label>
-""", unsafe_allow_html=True)
+# عرض العنوان بخط كبير بدون أي مسافة تحته
+st.markdown('<div style="font-size:26px; font-weight:bold; line-height:1;">🔍 ابحث هنا:</div>', unsafe_allow_html=True)
 
-# خانة الإدخال مباشرة تحت العنوان
-query = st.text_input("", placeholder="اكتب وصف الحالة…")
+# خانة الإدخال بدون عنوان نهائيًا
+query = st.text_input(
+    label="تم إخفاؤه",
+    placeholder="اكتب وصف الحالة…",
+    label_visibility="collapsed"
+)
 
 # التحقق من الإدخال
 if not query:
@@ -332,6 +332,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
