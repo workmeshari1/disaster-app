@@ -211,12 +211,19 @@ if not st.session_state.authenticated:
     st.stop()
 
 # بعد التحقق
-query = st.text_input("ابحث هنا:", placeholder="اكتب وصف الحالة…")
+
+# عرض العنوان بخط كبير
+st.markdown('<h2>🔍 ابحث هنا:</h2>', unsafe_allow_html=True)
+
+# إدخال النص بدون عنوان (لأن العنوان ظهر فوق)
+query = st.text_input("", placeholder="اكتب وصف الحالة…")
+
+# التحقق من الإدخال
 if not query:
     st.stop()
 
+# معالجة الإدخال
 q = query.strip().lower()
-
 # --------- 🔢 معالجة الأرقام مع دعم النطاقات والقيم المتعددة ---------
 if process_number_input(q, df, SYN_COL, ACTION_COL):
     st.stop()
@@ -321,4 +328,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
