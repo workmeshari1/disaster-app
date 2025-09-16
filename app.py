@@ -213,11 +213,9 @@ if not st.session_state.authenticated:
 # بعد التحقق
 
 # عرض العنوان بخط كبير
-st.markdown('<h1>🔍 ابحث هنا</h1>', unsafe_allow_html=True)
-
+st.markdown('<h3>🔍 ابحث هنا</h3>', unsafe_allow_html=True)
 # إدخال النص بدون عنوان (لأن العنوان ظهر فوق)
 query = st.text_input("", placeholder="اكتب وصف الحالة…")
-
 # التحقق من الإدخال
 if not query:
     st.stop()
@@ -328,6 +326,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
