@@ -128,7 +128,7 @@ def is_number_in_range(number, synonym):
 def process_number_input(q, df, syn_col, action_col):
     try:
         number = int(q)
-        matched_row = None
+        matched_rows = []
 
         for _, row in df.iterrows():
             synonyms = str(row.get(syn_col, "")).strip()
@@ -140,25 +140,25 @@ def process_number_input(q, df, syn_col, action_col):
                 if not syn:
                     continue
                 if is_number_in_range(number, syn):
-                    matched_row = row
-                    break
-            if matched_row is not None:
-                break
+                    matched_rows.append(row)
+                    break  # ← ننتقل للسطر التالي إذا وجدنا تطابقًا في هذا السطر
 
-        if matched_row is not None:
-            st.markdown(
-                f"""
-                <div style='background:#1f1f1f;color:#fff;padding:14px;border-radius:10px;
-                            direction:rtl;text-align:right;font-size:18px;margin-bottom:12px;'>
-                    <div style="font-size:22px;margin-bottom:8px;">🔢 نتيجة رقمية</div>
-                    <b>الوصف:</b> {matched_row.get("وصف الحالة أو الحدث", "—")}<br>
-                    <b>الإجراء:</b>
-                    <span style='background:#ff6600;color:#fff;padding:6px 10px;border-radius:6px;
-                                 display:inline-block;margin-top:6px;'>{matched_row[action_col]}</span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        if matched_rows:
+            st.subheader("🔢 نتائج رقمية مطابقة:")
+            for row in matched_rows:
+                st.markdown(
+                    f"""
+                    <div style='background:#1f1f1f;color:#fff;padding:14px;border-radius:10px;
+                                direction:rtl;text-align:right;font-size:18px;margin-bottom:12px;'>
+                        <div style="font-size:22px;margin-bottom:8px;">🔢 نتيجة رقمية</div>
+                        <b>الوصف:</b> {row.get("وصف الحالة أو الحدث", "—")}<br>
+                        <b>الإجراء:</b>
+                        <span style='background:#ff6600;color:#fff;padding:6px 10px;border-radius:6px;
+                                     display:inline-block;margin-top:6px;'>{row[action_col]}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
             return True
         else:
             st.warning("❌ لم يتم العثور على تطابق للرقم المدخل.")
@@ -166,7 +166,6 @@ def process_number_input(q, df, syn_col, action_col):
 
     except ValueError:
         return False
-
 # ============== واجهة ==============
 st.title("⚡دائرة إدارة الكوارث والأزمات الصناعية")
 
@@ -332,6 +331,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
