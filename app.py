@@ -212,18 +212,23 @@ if not st.session_state.authenticated:
 
 # بعد التحقق
 
-# عرض العنوان بخط كبير ومسافة صغيرة
-st.markdown('<p style="font-size:28px; margin-bottom: 0.2em;">🔍 ابحث هنا</p>', unsafe_allow_html=True)
+# عرض التسمية بخط كبير وملاصقة لخانة الإدخال
+st.markdown(
+    """
+    <label style="font-size: 26px; font-weight: bold; display: block; margin-bottom: -10px;">
+        🔍 ابحث هنا:
+    </label>
+    """, 
+    unsafe_allow_html=True
+)
 
-# مربع الإدخال مباشرة تحته
+# مربع الإدخال مباشرة بعد التسمية
 query = st.text_input("", placeholder="اكتب وصف الحالة…")
 
 # التحقق من الإدخال
 if not query:
     st.stop()
 
-# معالجة الإدخال
-q = query.strip().lower()
 # معالجة الإدخال
 q = query.strip().lower()
 # --------- 🔢 معالجة الأرقام مع دعم النطاقات والقيم المتعددة ---------
@@ -330,6 +335,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
