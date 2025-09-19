@@ -266,15 +266,15 @@ def render_card(r, icon="🔶"):
     )
 
 if literal_results:
-    st.subheader("🔍 النتائج المطابقة:")
+    st.subheader("🔍 النتائج المطابقة")
     for r in literal_results[:5]:
         render_card(r, "🔍")
 elif synonym_results:
-    st.subheader("🔍 نتائج ذات صلة:")
+    st.subheader("🔍  نتائج مرادفات")
     for r in synonym_results[:3]:
         render_card(r, "🔍")
 else:
-    st.warning(" لم يتم العثور على نتائج❌.. يرجى استخدام البحث الذكي 👇")
+    st.warning(" 👇لم يتم العثور على نتائج❌.. يرجى استخدام البحث الذكي ")
     if st.button("🤖 البحث الذكي"):
         try:
             with st.spinner("جاري البحث الذكي..."):
@@ -331,6 +331,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
