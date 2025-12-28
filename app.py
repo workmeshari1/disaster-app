@@ -6,11 +6,12 @@ from sentence_transformers import SentenceTransformer, util
 import torch
 import os
 import json
+import html  # ✅ مهم: لتعقيم النص القادم من Google Sheet ومنع ظهور HTML كنص
 
 # ✅ لازم تكون أول شيء بعد imports
 st.set_page_config(page_title="الإجراء الذكي", layout="centered", initial_sidebar_state="collapsed")
 
-# --- ✅ الخلفية: تظهر كاملة على الكمبيوتر + كاملة على الجوال بدون قص أو تشويه ---
+# --- ✅ الخلفية: تظهر كاملة على الكمبيوتر + بالجوال تتكرر عموديًا لتغطي كامل الصفحة ---
 page_style = """
 <style>
 .stApp{
@@ -18,10 +19,10 @@ page_style = """
     background-repeat: no-repeat;
     background-position: center center;
 
-    /* ✅ أهم سطر: يظهر الصورة كاملة دائمًا (كمبيوتر + جوال) */
+    /* ✅ يظهر الصورة كاملة دائمًا */
     background-size: contain;
 
-    /* ✅ لون يملأ الفراغات لو نسبة الشاشة تختلف عن الصورة */
+    /* ✅ لون يملأ الفراغات */
     background-color: #0b1220;
 
     min-height: 100vh;
@@ -33,7 +34,7 @@ page_style = """
     .stApp{
         background-size: contain;
         background-position: center top;
-        background-repeat: repeat-y;   /* ✅ هذا هو الحل */
+        background-repeat: repeat-y;   /* ✅ يغطي كامل الصفحة بالجوال */
         padding-top: 60px;
     }
 }
@@ -137,15 +138,18 @@ def process_number_input(q, df, syn_col, action_col, desc_col):
         if matched_rows:
             st.subheader("🔢 نتائج رقمية مطابقة:")
             for row in matched_rows:
+                desc = html.escape(str(row.get(desc_col, "—")))
+                action = html.escape(str(row.get(action_col, "—")))
+
                 st.markdown(
                     f"""
                     <div style='background:#1f1f1f;color:#fff;padding:14px;border-radius:10px;
                                 direction:rtl;text-align:right;font-size:18px;margin-bottom:12px;'>
                         <div style="font-size:22px;margin-bottom:8px;">🔢 نتيجة رقمية</div>
-                        <b>الوصف:</b> {row.get(desc_col, "—")}<br>
+                        <b>الوصف:</b> {desc}<br>
                         <b>الإجراء:</b>
                         <span style='background:#ff6600;color:#fff;padding:6px 10px;border-radius:6px;
-                                     display:inline-block;margin-top:6px;'>{row.get(action_col, "—")}</span>
+                                     display:inline-block;margin-top:6px;'>{action}</span>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -185,7 +189,6 @@ st.markdown(
 # تحميل البيانات
 df, PASSWORD = load_data_and_password()
 
-# الأعمدة
 DESC_COL = "وصف الحالة أو الحدث"
 ACTION_COL = "الإجراء"
 SYN_COL = "مرادفات للوصف"
@@ -217,10 +220,10 @@ if not st.session_state.authenticated:
             st.error("❌ الرقم السري غير صحيح")
     st.stop()
 
-# عرض العنوان بخط كبير بدون أي مسافة تحته
-st.markdown('<div style="font-size:20px; font-weight:bold; line-height:1;">🔍 ابحث هنا</div>', unsafe_allow_html=True)
+# عرض عنوان البحث
+st.markdown('<div style="font-size:20px; font-weight:bold; line-height:1;color:#fff;">🔍 ابحث هنا</div>', unsafe_allow_html=True)
 
-# خانة الإدخال بدون عنوان نهائيًا
+# خانة الإدخال
 query = st.text_input(
     label="تم إخفاؤه",
     placeholder="اكتب وصف الحالة…",
@@ -241,13 +244,11 @@ words = [w for w in q.split() if w]
 literal_results = []
 synonym_results = []
 
-# 1) الحرفي من الوصف
 for _, row in df.iterrows():
     text = str(row[DESC_COL]).lower()
     if all(w in text for w in words):
         literal_results.append(row)
 
-# 2) الحرفي من المرادفات
 if not literal_results:
     for _, row in df.iterrows():
         syn_text = str(row.get(SYN_COL, "")).lower()
@@ -255,14 +256,17 @@ if not literal_results:
             synonym_results.append(row)
 
 def render_card(r, icon="🔶"):
+    desc = html.escape(str(r.get(DESC_COL, "")))
+    action = html.escape(str(r.get(ACTION_COL, "")))
+
     st.markdown(
         f"""
         <div style='background:#1f1f1f;color:#fff;padding:12px;border-radius:8px;direction:rtl;text-align:right;font-size:18px;margin-bottom:10px;'>
             <div style="font-size:22px;margin-bottom:6px;">{icon} </div>
-            <b>الوصف:</b> {r[DESC_COL]}<br>
+            <b>الوصف:</b> {desc}<br>
             <b>الإجراء:</b>
             <span style='background:#ff6600;color:#0a1e3f;padding:4px 8px;border-radius:6px;display:inline-block;margin-top:4px;'>
-                {r[ACTION_COL]}
+                {action}
             </span>
         </div>
         """,
@@ -293,24 +297,18 @@ else:
 
                 st.subheader("🤖 نتائج مقترحة")
                 found_results = False
+
                 for score, idx in zip(top_scores, top_indices):
                     if float(score) > 0.3:
                         found_results = True
                         r = df.iloc[int(idx.item())]
-                        st.markdown(
-                            f"""
-                            <div style='background:#444;color:#fff;padding:12px;border-radius:8px;direction:rtl;text-align:right;font-size:18px;margin-bottom:10px;'>
-                                <div style="font-size:22px;margin-bottom:6px;">🤖 </div>
-                                <b>الوصف:</b> {r[DESC_COL]}<br>
-                                <b>الإجراء:</b>
-                                <span style='background:#ff6600;color:#0a1e3f;padding:4px 8px;border-radius:6px;display:inline-block;margin-top:4px;'>
-                                    {r[ACTION_COL]}
-                                </span><br>
-                                <span style='font-size:14px;color:orange;'>درجة التشابه: {float(score):.2f}</span>
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
-                        )
+
+                        # ✅ عرض النتيجة بنفس كرت النتائج
+                        render_card(r, "🤖")
+
+                        # ✅ عرض التشابه خارج HTML (آمن ولن يظهر كود كنص)
+                        st.caption(f"درجة التشابه: {float(score):.2f}")
+
                 if not found_results:
                     st.info("🤖 لم يتم العثور على نتائج مشابهة كافية. حاول إعادة صياغة سؤالك.")
         except Exception as e:
